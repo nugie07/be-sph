@@ -95,27 +95,27 @@
                 <td style="width: 45%; vertical-align: top; padding-left:10px;">
                     <p class="header-title">Headquarter</p>
                     <p class="header-content">
-                            World Capital Tower Lt. 5 Unit 01
-                        </p>
+                        World Capital Tower Lt. 5 Unit 01
+                    </p>
                     <p class="header-content">
-                            Jl. Mega Kuningan Barat, Lingkar Mega Kuningan No. 3
-                        </p>
+                        Jl. Mega Kuningan Barat, Lingkar Mega Kuningan No. 3
+                    </p>
                     <p class="header-content">
-                            Kec. Setiabudi, Jakarta Selatan 12950
-                        </p>
+                        Kec. Setiabudi, Jakarta Selatan 12950
+                    </p>
                     <p class="header-content">Phone: +62 811 88882221</p>
                 </td>
                 <td style="width: 35%; vertical-align: top; text-align: right;">
                      <p class="header-title">Banjarmasin Office:</p>
                     <p class="header-content">
-                            Gagah Putera Satria Building
-                        </p>
+                        Gagah Putera Satria Building
+                    </p>
                     <p class="header-content">
                         JL KP. Tendean No. 158
-                        </p>
+                    </p>
                     <p class="header-content">
-                            Banjarmasin
-                        </p>
+                        Banjarmasin
+                    </p>
                     <p class="header-content">Kalimantan Selatan 70231</p>
                 </td>
             </tr>
@@ -124,35 +124,35 @@
         <hr />
 
         <h2 style="font-size: 16px; font-weight: bold; text-align: center; margin: 0 0 15px 0; text-decoration: underline;">
-                        PURCHASE ORDER
+            PURCHASE ORDER
         </h2>
 
-                <table class="table-no-border">
-                    <tr>
+        <table class="table-no-border">
+            <tr>
                 <td style="width: 10%;">To</td>
                 <td style="width: 45%;">: {{$poTransport->to}}<br>: {{$poTransport->name}}</td>
                 <td style="width: 15%;">P.O No.</td>
                 <td style="width: 30%;">: {{$poTransport->po_number}}</td>
-                    </tr>
-                    <tr>
-                        <td></td>
-                        <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
                 <td>P.O Date</td>
                 <td>: {{$poTransport->po_date}}</td>
-                    </tr>
-                    <tr>
+            </tr>
+            <tr>
                 <td>Address</td>
                 <td>: {{$poTransport->address}}</td>
                 <td>Delivered To</td>
                 <td>: {{$poTransport->delivered_to}}</td>
-                    </tr>
-                    <tr>
-                        <td></td>
-                        <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
                 <td>Loading Point</td>
                 <td>: {{$poTransport->loading_point}}</td>
-                    </tr>
-                </table>
+            </tr>
+        </table>
 
         <p style="margin-left:0; margin-bottom:10px;">Comments or special instructions: {{$poTransport->comments}}</p>
 
