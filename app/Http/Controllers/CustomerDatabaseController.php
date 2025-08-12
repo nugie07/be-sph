@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Helpers\AuthValidator;
 use App\Models\User;
 use Carbon\Carbon;
+use App\Helpers\UserSysLogHelper;
 
 class CustomerDatabaseController extends Controller
 {
@@ -82,6 +83,9 @@ class CustomerDatabaseController extends Controller
             $totalActive = DB::table('master_customer')->whereNull('deleted_at')->where('status', 1)->count();
             $totalInactive = DB::table('master_customer')->whereNull('deleted_at')->where('status', 0)->count();
             $totalByType = DB::table('master_customer')->whereNull('deleted_at')->select('type', DB::raw('count(*) as total'))->groupBy('type')->get();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'CustomerDatabase', 'index');
 
             return response()->json([
                 'success' => true,
@@ -236,6 +240,9 @@ class CustomerDatabaseController extends Controller
 
             DB::commit();
 
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'CustomerDatabase', 'store');
+
             Log::info('Customer created successfully', [
                 'id' => $id,
                 'name' => $request->name,
@@ -349,6 +356,9 @@ class CustomerDatabaseController extends Controller
 
             DB::commit();
 
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'CustomerDatabase', 'update');
+
             Log::info('Customer updated successfully', [
                 'id' => $id,
                 'name' => $request->name,
@@ -431,6 +441,9 @@ class CustomerDatabaseController extends Controller
                 ]);
 
             DB::commit();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'CustomerDatabase', 'destroy');
 
             Log::info('Customer soft deleted successfully', [
                 'id' => $id,

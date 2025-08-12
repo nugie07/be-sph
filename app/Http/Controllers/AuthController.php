@@ -9,6 +9,7 @@ use App\Helpers\AuthValidator;
 use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\WorkflowHelper;
+use App\Helpers\UserSysLogHelper;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -66,6 +67,9 @@ public function login(Request $request)
 
         // Ambil plain token tanpa id|
         $plainToken = explode('|', $tokenResult->plainTextToken, 2)[1];
+
+        // Log aktivitas login
+        UserSysLogHelper::log($user->id, $user->first_name . ' ' . $user->last_name, 'Auth', 'login');
 
         return response()->json([
             'message' => 'Login successful',

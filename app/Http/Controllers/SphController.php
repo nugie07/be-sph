@@ -22,6 +22,7 @@ use App\Models\WorkflowRecord;
 use App\Models\WorkflowRemark;
 use App\Models\User;
 use App\Helpers\WorkflowHelper;
+use App\Helpers\UserSysLogHelper;
 
 class SphController extends Controller
 {
@@ -30,7 +31,7 @@ public function getCustomers(Request $request)
         $result = AuthValidator::validateTokenAndClient($request);
 
             if (!is_array($result) || !$result['status']) {
-                return $result; 
+                return $result;
             }
         $type = $request->type;
 
@@ -54,7 +55,7 @@ public function getCustomerDetail(Request $request)
          $result = AuthValidator::validateTokenAndClient($request);
 
             if (!is_array($result) || !$result['status']) {
-                return $result; 
+                return $result;
             }
         $customer = MasterCustomer::where('id', $request->id)->first();
         return response()->json([
@@ -114,6 +115,7 @@ public function store(Request $request)
             $sph->susut        = $validated['susut'] ?? null;
             $sph->note_berlaku = $validated['note_berlaku'] ?? null;
             $sph->created_by   = $fullName;
+            $sph->created_by_id   = $user->id;
             $sph->last_updateby = $user->id;
             $sph->status       = 1;
             $sph->save();
@@ -127,6 +129,9 @@ public function store(Request $request)
             );
 
             DB::commit();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'Sph', 'store');
 
             return response()->json(['message' => 'SPH berhasil disimpan!'], 201);
 
@@ -145,8 +150,10 @@ public function list(Request $request)
         if (!is_array($result) || !$result['status']) {
             return $result;
         }
+        $filterId = $result['id'];
         $status = $request->query('status');
         $month = $request->query('month');
+        $restrict = $request->query('restrict');
 
         $query = DataTrxSph::query();
         if ($status === 'waiting') {
@@ -166,6 +173,11 @@ public function list(Request $request)
         [$year, $mon] = explode('-', $month);
         $query->whereYear('created_at', $year)
               ->whereMonth('created_at', $mon);
+        }
+
+        // Filter berdasarkan restrict
+        if ($restrict == 1) {
+            $query->where('created_by_id', $filterId);
         }
         // ambil data SPH sesuai filter
         $sphs = $query->get();
@@ -211,13 +223,21 @@ public function list(Request $request)
         });
 
         // hitung jumlah SPH per status
+        $cardsQuery = DataTrxSph::query();
+        if ($restrict == 1) {
+            $cardsQuery->where('created_by_id', $filterId);
+        }
+
         $cards = [
-            'total_sph' => DataTrxSph::count(),
-            'waiting'   => DataTrxSph::where('status', 1)->count(),
-            'revisi'    => DataTrxSph::where('status', 2)->count(),
-            'approved'  => DataTrxSph::where('status', 4)->count(),
-            'reject'    => DataTrxSph::where('status', 3)->count(),
+            'total_sph' => $cardsQuery->count(),
+            'waiting'   => (clone $cardsQuery)->where('status', 1)->count(),
+            'revisi'    => (clone $cardsQuery)->where('status', 2)->count(),
+            'approved'  => (clone $cardsQuery)->where('status', 4)->count(),
+            'reject'    => (clone $cardsQuery)->where('status', 3)->count(),
         ];
+
+        // Log aktivitas user
+        UserSysLogHelper::logFromAuth($result, 'Sph', 'list');
 
         return response()->json([
             'data'  => $data,
@@ -254,6 +274,9 @@ public function destroy(Request $request)
             // jika ada relasi lain yang perlu dihapus, tambahkan di sini
             $sph->delete();
         });
+
+        // Log aktivitas user
+        UserSysLogHelper::logFromAuth($result, 'Sph', 'destroy');
 
         return response()->json([
             'message' => 'SPH berhasil dihapus dan semua relasi dibersihkan.'
@@ -361,12 +384,16 @@ public function approveSph(Request $request, $id)
             ]);
 
             DB::commit();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'Sph', 'approveSph', 'Approve SPH: ' . $status);
+
             return response()->json(['message'=>'Konfirmasi  berhasil disimpan']);
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json(['message'=>$e->getMessage()], 422);
         }
-        
+
     }
 
 public function send(Request $request)
@@ -388,13 +415,13 @@ public function send(Request $request)
         try {
             Mail::to($to)->send(new SphNotificationMail($data, $fileUrl, 'Penawaran Surat Penawaran Harga - SPH', 'emails.sph_notification'));
             $response = ['message' => 'Email sent successfully!'];
-            
+
         } catch (\Exception $e) {
             $response = [
                 'message' => 'Failed to send email.',
                 'error'   => $e->getMessage()
             ];
-            
+
         }
         log_system('sph', 'SPH -> Email', 'Email', $validated, $response);
         return response()->json($response);

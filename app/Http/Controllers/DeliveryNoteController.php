@@ -9,12 +9,19 @@ use Carbon\Carbon;
 
 
 use App\Models\FinanceInvoice;
+use App\Helpers\UserSysLogHelper;
+use App\Helpers\AuthValidator;
 
 class DeliveryNoteController extends Controller
 {
     // List & filter
 public function index(Request $request)
     {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
         $date = $request->get('created_at');
         $query = DeliveryNote::query();
         if ($date) {
@@ -27,6 +34,9 @@ public function index(Request $request)
             $item->shipped_via = DB::table('purchase_order')->where('drs_unique', $item->drs_unique)->value('shipped_via');
             return $item;
         });
+        // Log aktivitas user
+        UserSysLogHelper::logFromAuth($result, 'DeliveryNote', 'index');
+
         return response()->json(['data' => $data]);
     }
 
@@ -40,11 +50,20 @@ public function show($id)
     // Simpan data baru
     public function store(Request $request)
     {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+        
         DB::beginTransaction();
         try {
             $data = $request->all();
             $note = DeliveryNote::create($data);
             DB::commit();
+            
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'DeliveryNote', 'store');
+
             return response()->json(['success' => true, 'data' => $note]);
         } catch (\Exception $e) {
             DB::rollBack();
