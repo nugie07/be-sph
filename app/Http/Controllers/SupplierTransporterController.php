@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Helpers\AuthValidator;
 use App\Models\User;
 use Carbon\Carbon;
+use App\Helpers\UserSysLogHelper;
 
 class SupplierTransporterController extends Controller
 {
@@ -88,6 +89,9 @@ class SupplierTransporterController extends Controller
             $totalInactive = DB::table('data_supplier_transporter')->whereNull('deleted_at')->where('status', 0)->count();
             $totalSupplier = DB::table('data_supplier_transporter')->whereNull('deleted_at')->where('category', 1)->count();
             $totalTransporter = DB::table('data_supplier_transporter')->whereNull('deleted_at')->where('category', 2)->count();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'SupplierTransporter', 'index');
 
             return response()->json([
                 'success' => true,
@@ -241,6 +245,9 @@ class SupplierTransporterController extends Controller
 
             DB::commit();
 
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'SupplierTransporter', 'store');
+
             Log::info('Supplier/Transporter created successfully', [
                 'id' => $id,
                 'nama' => $request->nama,
@@ -351,6 +358,9 @@ class SupplierTransporterController extends Controller
 
             DB::commit();
 
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'SupplierTransporter', 'update');
+
             Log::info('Supplier/Transporter updated successfully', [
                 'id' => $id,
                 'nama' => $request->nama,
@@ -431,6 +441,9 @@ class SupplierTransporterController extends Controller
                 ]);
 
             DB::commit();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'SupplierTransporter', 'destroy');
 
             Log::info('Supplier/Transporter soft deleted successfully', [
                 'id' => $id,

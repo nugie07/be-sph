@@ -16,13 +16,19 @@ use App\Helpers\AuthValidator;
 use App\Models\User;
 use Carbon\Carbon;
 use App\Helpers\WorkflowHelper;
+use App\Helpers\UserSysLogHelper;
 
 class FinanceInvoiceController extends Controller
 {
 public function index(Request $request)
     {
-            $status = $request->get('status');
-            $category = $request->get('category');
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+        
+        $status = $request->get('status');
+        $category = $request->get('category');
 
             $query = FinanceInvoice::query();
 
@@ -61,6 +67,9 @@ public function index(Request $request)
                 'unpaid' => 'Rp ' . number_format(FinanceInvoice::where('status', 4)->where('payment_status', 0)->sum('total'), 0, ',', '.'),
             ];
 
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'FinanceInvoice', 'index');
+
             return response()->json([
                 'data' => $invoices,
                 'summary' => $summary,
@@ -86,6 +95,11 @@ public function show($id)
      */
 public function update(Request $request, $id)
     {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+        
         DB::beginTransaction();
         try {
             $invoice = FinanceInvoice::findOrFail($id);
@@ -111,6 +125,10 @@ public function update(Request $request, $id)
             InvoiceDetail::where('invoice_id', $id)->whereNotIn('id', $detailIds)->delete();
 
             DB::commit();
+            
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'FinanceInvoice', 'update');
+
             return response()->json(['success' => true, 'message' => 'Invoice berhasil diperbarui.']);
 
         } catch (\Exception $e) {
@@ -256,6 +274,10 @@ public function store(Request $request)
                     $fullName
                 );
             DB::commit();
+            
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'FinanceInvoice', 'store');
+
             return response()->json(['success' => true, 'message' => 'Invoice berhasil dibuat.']);
 
         } catch (\Exception $e) {

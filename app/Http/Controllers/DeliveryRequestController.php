@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use App\Helpers\AuthValidator;
 use App\Models\User;
 use App\Helpers\WorkflowHelper;
+use App\Helpers\UserSysLogHelper;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -96,6 +97,9 @@ public function store(Request $request)
             \Log::error('PDF generation failed for DRS '.$drs->drs_unique, ['error'=>$e->getMessage()]);
         }
 
+        // Log aktivitas user
+        UserSysLogHelper::logFromAuth($result, 'DeliveryRequest', 'store');
+
         return response()->json([
             'message' => 'Delivery Request created successfully',
             'data' => $drs
@@ -105,10 +109,18 @@ public function store(Request $request)
     /**
      * Delete a Delivery Request.
      */
-public function destroy($id)
+public function destroy(Request $request, $id)
     {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+        
         $drs = DeliveryRequest::findOrFail($id);
         $drs->delete();
+
+        // Log aktivitas user
+        UserSysLogHelper::logFromAuth($result, 'DeliveryRequest', 'destroy');
 
         return response()->json([
             'message' => 'Delivery Request deleted successfully'

@@ -15,6 +15,7 @@ use App\Models\DeliveryRequest;
 use App\Models\User;
 use App\Helpers\WorkflowHelper;
 use App\Helpers\AuthValidator;
+use App\Helpers\UserSysLogHelper;
 use App\Models\GoodReceipt;
 
 class PurchaseOrderController extends Controller
@@ -140,6 +141,9 @@ public function list(Request $request)
         $approved         = PurchaseOrder::where('status', 4)->count();
         $rejected         = PurchaseOrder::where('status', 3)->count();
 
+        // Log aktivitas user
+        UserSysLogHelper::logFromAuth($result, 'PurchaseOrder', 'list');
+
         return response()->json([
             'data' => $data,
             'summary' => [
@@ -222,6 +226,9 @@ public function poTransporter(Request $request)
 
         $id = $po->id;
 
+        // Log aktivitas user
+        UserSysLogHelper::logFromAuth($result, 'PurchaseOrder', 'poTransporter');
+
         return response()->json([
             'success' => true,
             'message' => 'PO anda berhasil diajukan!',
@@ -294,6 +301,9 @@ public function update(Request $request, $po_id)
             "User {$fullName} mengajukan approval untuk no po {$vendor_po} di {$timestamp}",
             $fullName
         );
+
+        // Log aktivitas user
+        UserSysLogHelper::logFromAuth($result, 'PurchaseOrder', 'update');
 
         return response()->json([
             'success' => true,
@@ -426,6 +436,9 @@ public function verify(Request $request, $poId)
 
             DB::commit();
 
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'PurchaseOrder', 'verify', 'Verify PO: ' . $validated['verify_status']);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Verifikasi berhasil.'
@@ -521,6 +534,9 @@ public function savePoSupplier(Request $request)
             "User {$fullName} mengajukan approval untuk no po {$vendor_po} di {$timestamp}",
             $fullName
         );
+
+        // Log aktivitas user
+        UserSysLogHelper::logFromAuth($result, 'PurchaseOrder', 'savePoSupplier');
 
         return response()->json([
             'success' => true,

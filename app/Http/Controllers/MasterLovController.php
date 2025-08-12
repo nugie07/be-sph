@@ -8,6 +8,7 @@ use App\Helpers\AuthValidator;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Helpers\UserSysLogHelper;
 
 class MasterLovController extends Controller
 {
@@ -103,6 +104,9 @@ class MasterLovController extends Controller
                 'query_bindings' => $query->getBindings()
             ]);
 
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'MasterLov', 'getListLokasi');
+
             return response()->json([
                 'success' => true,
                 'data' => $lokasiList,
@@ -180,6 +184,9 @@ class MasterLovController extends Controller
             $lokasi->save();
 
             DB::commit();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'MasterLov', 'deleteLokasi');
 
             return response()->json([
                 'success' => true,
@@ -268,6 +275,9 @@ class MasterLovController extends Controller
             ]);
 
             DB::commit();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'MasterLov', 'createLokasi');
 
             return response()->json([
                 'success' => true,
@@ -367,6 +377,9 @@ class MasterLovController extends Controller
             ]);
 
             DB::commit();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'MasterLov', 'updateLokasi');
 
             return response()->json([
                 'success' => true,

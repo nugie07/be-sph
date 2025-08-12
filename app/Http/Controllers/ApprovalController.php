@@ -26,6 +26,7 @@ use App\Models\PurchaseOrder;
 use App\Models\FinanceInvoice;
 use App\Models\InvoiceDetail;
 use App\Helpers\WorkflowHelper;
+use App\Helpers\UserSysLogHelper;
 
 class ApprovalController extends Controller
 {
@@ -34,6 +35,11 @@ class ApprovalController extends Controller
      */
 public function list(Request $request)
     {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
         try {
             // SPH Approval
             $sphApproval = DataTrxSph::where('status', 1)->count();
@@ -77,6 +83,9 @@ public function list(Request $request)
             // Hitung total approval
             $totalApproval = $sphApproval + $supplierApproval + $transporterApproval + $invoiceApproval;
 
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'Approval', 'list');
+
             return response()->json([
                 'success' => true,
                 'data' => $data,
@@ -108,6 +117,11 @@ public function list(Request $request)
      */
 public function getApprovalDetails(Request $request)
     {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
         try {
                                     // SPH Approval Details
             $sphData = DataTrxSph::where('status', 1)
@@ -219,6 +233,9 @@ public function getApprovalDetails(Request $request)
                         'created_at' => $item->created_at ? Carbon::parse($item->created_at)->format('Y-m-d H:i') : ''
                     ];
                 });
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'Approval', 'getApprovalDetails');
 
             return response()->json([
                 'success' => true,
@@ -369,6 +386,9 @@ public function verifyInvoice(Request $request, $trx_id)
             );
 
             DB::commit();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'Approval', 'verifyInvoice', 'Verify Invoice: ' . $validated['decision']);
 
             return response()->json([
                 'success' => true,

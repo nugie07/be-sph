@@ -15,6 +15,7 @@ use App\Models\DetailGoodReceipt;
 use App\Models\RevGoodReceipt;
 use App\Models\User;
 use App\Models\DataTrxSph;
+use App\Helpers\UserSysLogHelper;
 
 class GoodReceiptController extends Controller
 {
@@ -55,6 +56,9 @@ public function list(Request $request)
             'waiting'      => $total_po_belum,
             'received'     => $total_po_terima,
         ];
+
+        // Log aktivitas user
+        UserSysLogHelper::logFromAuth($result, 'GoodReceipt', 'list');
 
         return response()->json([
             'data'  => $data,
@@ -202,6 +206,9 @@ public function update(Request $request, $po_id)
             ];
 
             $this->sendPoNotif($validatedForMail, $gr->po_file);
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'GoodReceipt', 'update');
 
             return response()->json([
                 'code' => 200,
@@ -401,6 +408,9 @@ public function revisi(Request $request, $id)
                 // (Opsional) Kirim notifikasi email, jika memang perlu pada revisi
                 // $this->sendPoNotif(...);
 
+                // Log aktivitas user
+                UserSysLogHelper::logFromAuth($result, 'GoodReceipt', 'revisi');
+
                 return response()->json([
                     'code' => 200,
                     'message' => 'Revisi Good Receipt berhasil disimpan.'
@@ -440,6 +450,9 @@ public function revisi(Request $request, $id)
             $gr->save();
 
             DB::commit();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'GoodReceipt', 'cancelPo');
 
             return response()->json([
                 'success' => true,
