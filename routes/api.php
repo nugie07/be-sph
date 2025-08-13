@@ -156,6 +156,7 @@ Route::get('/user-management/roles/{roleId}/permissions', [UserManagementControl
 Route::post('/user-management/roles/{roleId}/sync-permissions', [UserManagementController::class, 'syncPermissionsToRole']);
 Route::get('/user-management/user/permissions', [UserManagementController::class, 'getUserPermissions']);
 Route::get('/user-management/user/{userId}/permissions', [UserManagementController::class, 'getUserPermissions']);
+Route::post('/user-management/{id}/reset-password', [UserManagementController::class, 'resetPassword']);
 
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
