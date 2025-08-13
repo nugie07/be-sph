@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Helpers\AuthValidator;
+use App\Helpers\UserSysLogHelper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
@@ -60,6 +62,9 @@ class UserManagementController extends Controller
                         ->skip(($page - 1) * $perPage)
                         ->take($perPage)
                         ->get();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'UserManagement', 'index');
 
             return response()->json([
                 'success' => true,
@@ -128,6 +133,9 @@ class UserManagementController extends Controller
                 ], 404);
             }
 
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'UserManagement', 'show');
+
             return response()->json([
                 'success' => true,
                 'data' => $user
@@ -188,6 +196,34 @@ class UserManagementController extends Controller
             $user->assignRole($role);
 
             DB::commit();
+
+            // Kirim email welcome ke user baru
+            try {
+                $emailData = [
+                    'fullname' => $user->first_name . ' ' . $user->last_name,
+                    'email' => $user->email,
+                    'username' => $user->email, // Username sama dengan email
+                    'password' => $request->password // Password asli sebelum di-hash
+                ];
+
+                Mail::to($user->email)->send(new \App\Mail\NewUserMail($emailData));
+
+                Log::info('Welcome email sent successfully', [
+                    'user_id' => $user->id,
+                    'email' => $user->email
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error('Failed to send welcome email', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'error' => $e->getMessage()
+                ]);
+                // Tidak throw exception agar tidak mengganggu proses create user
+            }
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'UserManagement', 'store');
 
             return response()->json([
                 'success' => true,
@@ -287,6 +323,9 @@ class UserManagementController extends Controller
 
             DB::commit();
 
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'UserManagement', 'update');
+
             return response()->json([
                 'success' => true,
                 'message' => 'User berhasil diupdate',
@@ -362,6 +401,9 @@ class UserManagementController extends Controller
 
             DB::commit();
 
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'UserManagement', 'destroy');
+
             return response()->json([
                 'success' => true,
                 'message' => 'User berhasil dihapus',
@@ -406,6 +448,9 @@ class UserManagementController extends Controller
         try {
             $roles = Role::select('id', 'name')->orderBy('name', 'asc')->get();
 
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'UserManagement', 'getRoles');
+
             return response()->json([
                 'success' => true,
                 'data' => $roles
@@ -439,6 +484,9 @@ class UserManagementController extends Controller
             $permissions = Permission::select('id', 'name', 'guard_name', 'created_at', 'updated_at')
                             ->orderBy('name', 'asc')
                             ->get();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'UserManagement', 'getPermissions');
 
             return response()->json([
                 'success' => true,
@@ -497,6 +545,9 @@ class UserManagementController extends Controller
 
             $permissions = collect(DB::select($sql, [$roleId]));
 
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'UserManagement', 'getPermissionsByRole');
+
             return response()->json([
                 'success' => true,
                 'data' => $permissions,
@@ -551,6 +602,9 @@ class UserManagementController extends Controller
             ]);
 
             DB::commit();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'UserManagement', 'createRole');
 
             return response()->json([
                 'success' => true,
@@ -629,6 +683,9 @@ class UserManagementController extends Controller
 
             // Group permissions berdasarkan struktur
             $groupedPermissions = $this->groupPermissionsByStructure($allPermissions, $userPermissions);
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'UserManagement', 'getUserPermissions');
 
             return response()->json([
                 'success' => true,
@@ -816,6 +873,9 @@ class UserManagementController extends Controller
             $removedPermissionNames = Permission::whereIn('id', $removedPermissions)->pluck('name', 'id');
             $allAssignedNames = Permission::whereIn('id', $checkedPermissionIds)->pluck('name', 'id');
 
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'UserManagement', 'syncPermissionsToRole', 'Sync permissions untuk role: ' . $role->name);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Permissions berhasil disinkronisasi',
@@ -857,5 +917,131 @@ class UserManagementController extends Controller
                 'message' => 'Gagal sync permissions: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Reset password user dan kirim email
+     */
+    public function resetPassword(Request $request, $id)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        $currentUser = User::find($result['id']);
+        $fullName = "{$currentUser->first_name} {$currentUser->last_name}";
+
+        try {
+            DB::beginTransaction();
+
+            // Cari user yang akan di-reset password
+            $user = User::findOrFail($id);
+
+            // Generate password baru yang kuat
+            $newPassword = $this->generateRandomPassword(12);
+
+            // Update password user
+            $user->password = Hash::make($newPassword);
+            $user->email_verified_at = null; // Reset email verification
+            $user->save();
+
+            // Kirim email reset password
+            try {
+                $emailData = [
+                    'fullname' => $user->first_name . ' ' . $user->last_name,
+                    'email' => $user->email,
+                    'username' => $user->email,
+                    'password' => $newPassword,
+                    'reset_by' => $fullName
+                ];
+
+                Mail::to($user->email)->send(new \App\Mail\ResetPasswordMail($emailData));
+
+                // Kirim copy ke admin support jika ada
+                $supportEmail = env('MAIL_SUPPORT_EMAIL');
+                if ($supportEmail && $supportEmail !== $user->email) {
+                    Mail::to($supportEmail)->send(new \App\Mail\ResetPasswordAdminMail($emailData));
+                }
+
+                Log::info('Reset password email sent successfully', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'reset_by' => $result['id']
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error('Failed to send reset password email', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'error' => $e->getMessage()
+                ]);
+                // Tidak throw exception agar tidak mengganggu proses reset password
+            }
+
+            DB::commit();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'UserManagement', 'resetPassword', 'Reset password user: ' . $user->email);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password berhasil direset dan email telah dikirim',
+                'data' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'full_name' => $user->first_name . ' ' . $user->last_name,
+                    'email' => $user->email,
+                    'reset_by' => $fullName,
+                    'reset_at' => now()->format('Y-m-d H:i:s'),
+                    'email_sent' => true
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            Log::error('Error resetting password', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_id' => $id,
+                'reset_by' => $result['id']
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal reset password: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate random password yang kuat
+     */
+    private function generateRandomPassword($length = 12)
+    {
+        $uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $lowercase = 'abcdefghijklmnopqrstuvwxyz';
+        $numbers = '0123456789';
+        $symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+
+        $password = '';
+
+        // Pastikan minimal 1 karakter dari setiap jenis
+        $password .= $uppercase[rand(0, strlen($uppercase) - 1)];
+        $password .= $lowercase[rand(0, strlen($lowercase) - 1)];
+        $password .= $numbers[rand(0, strlen($numbers) - 1)];
+        $password .= $symbols[rand(0, strlen($symbols) - 1)];
+
+        // Isi sisa dengan karakter random
+        $allChars = $uppercase . $lowercase . $numbers . $symbols;
+        for ($i = 4; $i < $length; $i++) {
+            $password .= $allChars[rand(0, strlen($allChars) - 1)];
+        }
+
+        // Shuffle password agar tidak predictable
+        return str_shuffle($password);
     }
 }
