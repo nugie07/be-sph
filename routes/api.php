@@ -21,6 +21,7 @@ use App\Http\Controllers\UserManagementController;
 
 // Logging
 Route::post('/system-logs', [SystemLogController::class, 'store']);
+Route::get('/user-sys-logs', [SystemLogController::class, 'userSysLog']);
 
 // User Management Routes
 Route::post('/login', [AuthController::class, 'login']);
