@@ -203,12 +203,12 @@ class CustomerDatabaseController extends Controller
                 'alias' => 'required|string|max:100',
                 'type' => 'required|string|max:50',
                 'name' => 'required|string|max:255',
-                'address' => 'required|string|max:500',
-                'pic_name' => 'required|string|max:100',
-                'pic_contact' => 'required|string|max:20',
-                'email' => 'required|email|max:255',
-                'bill_to' => 'required|string|max:500',
-                'ship_to' => 'required|string|max:500',
+                'address' => 'nullable|string|max:500',
+                'pic_name' => 'nullable|string|max:100',
+                'pic_contact' => 'nullable|string|max:20',
+                'email' => 'nullable|email|max:255',
+                'bill_to' => 'nullable|string|max:500',
+                'ship_to' => 'nullable|string|max:500',
                 'status' => 'required|in:0,1'
             ]);
 
@@ -305,12 +305,12 @@ class CustomerDatabaseController extends Controller
                 'alias' => 'required|string|max:100',
                 'type' => 'required|string|max:50',
                 'name' => 'required|string|max:255',
-                'address' => 'required|string|max:500',
-                'pic_name' => 'required|string|max:100',
-                'pic_contact' => 'required|string|max:20',
-                'email' => 'required|email|max:255',
-                'bill_to' => 'required|string|max:500',
-                'ship_to' => 'required|string|max:500',
+                'address' => 'nullable|string|max:500',
+                'pic_name' => 'nullable|string|max:100',
+                'pic_contact' => 'nullable|string|max:20',
+                'email' => 'nullable|email|max:255',
+                'bill_to' => 'nullable|string|max:500',
+                'ship_to' => 'nullable|string|max:500',
                 'status' => 'required|in:0,1'
             ]);
 
