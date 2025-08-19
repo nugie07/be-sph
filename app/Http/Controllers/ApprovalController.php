@@ -25,6 +25,7 @@ use App\Models\User;
 use App\Models\PurchaseOrder;
 use App\Models\FinanceInvoice;
 use App\Models\InvoiceDetail;
+use App\Models\WorkflowEngine;
 use App\Helpers\WorkflowHelper;
 use App\Helpers\UserSysLogHelper;
 
@@ -532,6 +533,249 @@ public function verifyInvoice(Request $request, $trx_id)
                     'file' => $e->getFile(),
                     'line' => $e->getLine()
                 ]
+            ], 500);
+        }
+    }
+
+    /**
+     * List workflow engine dengan pagination dan search
+     */
+    public function listEngine(Request $request)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        try {
+            $page = (int) $request->get('page', 1);
+            $perPage = (int) $request->get('per_page', 10);
+            $search = $request->get('search', '');
+
+            // Base query dengan join ke roles untuk mendapatkan nama role
+            $query = WorkflowEngine::query()
+                ->leftJoin('roles as first_role', 'workflow_engine.first_appr', '=', 'first_role.id')
+                ->leftJoin('roles as second_role', 'workflow_engine.second_appr', '=', 'second_role.id')
+                ->select([
+                    'workflow_engine.id',
+                    'workflow_engine.tipe_trx',
+                    'workflow_engine.first_appr',
+                    'workflow_engine.second_appr',
+                    'workflow_engine.timestamp',
+                    'first_role.name as first_appr_name',
+                    'second_role.name as second_appr_name'
+                ]);
+
+            // Search filter by tipe_trx
+            if (!empty($search)) {
+                $query->where('workflow_engine.tipe_trx', 'LIKE', '%' . $search . '%');
+            }
+
+            // Hitung total records
+            $totalCount = $query->count();
+
+            // Ambil data dengan pagination
+            $workflowEngine = $query->orderBy('workflow_engine.tipe_trx', 'asc')
+                ->skip(($page - 1) * $perPage)
+                ->take($perPage)
+                ->get();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'Approval', 'listEngine');
+
+            $response = [
+                'success' => true,
+                'data' => $workflowEngine,
+                'pagination' => [
+                    'current_page' => $page,
+                    'per_page' => $perPage,
+                    'total' => $totalCount,
+                    'total_pages' => ceil($totalCount / $perPage),
+                    'has_next_page' => $page < ceil($totalCount / $perPage),
+                    'has_prev_page' => $page > 1
+                ]
+            ];
+
+            // Capture log menggunakan helper SystemLog
+            log_system(
+                'Approval',
+                'List workflow engine',
+                'listEngine.ApprovalController',
+                $request->all(),
+                $response
+            );
+
+            return response()->json($response);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting workflow engine list', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'request_data' => $request->all()
+            ]);
+
+            $errorResponse = [
+                'success' => false,
+                'message' => 'Gagal mengambil data workflow engine: ' . $e->getMessage()
+            ];
+
+            // Capture log error menggunakan helper SystemLog
+            log_system(
+                'Approval',
+                'Error getting workflow engine list',
+                'listEngine.ApprovalController',
+                $request->all(),
+                $errorResponse
+            );
+
+            return response()->json($errorResponse, 500);
+        }
+    }
+
+    /**
+     * Update workflow engine berdasarkan ID
+     */
+    public function updateEngine(Request $request, $id)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        $user = User::find($result['id']);
+        $fullName = "{$user->first_name} {$user->last_name}";
+
+        try {
+            // Validasi input
+            $request->validate([
+                'tipe_trx' => 'required|string|max:100',
+                'first_appr' => 'required|integer|exists:roles,id',
+                'second_appr' => 'nullable|integer|exists:roles,id'
+            ]);
+
+            DB::beginTransaction();
+
+            // Cari workflow engine yang akan diupdate
+            $workflowEngine = WorkflowEngine::findOrFail($id);
+
+            // Cek apakah tipe_trx sudah ada (kecuali untuk record yang sama)
+            $existingWorkflow = WorkflowEngine::where('tipe_trx', $request->tipe_trx)
+                ->where('id', '!=', $id)
+                ->first();
+
+            if ($existingWorkflow) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tipe transaksi sudah ada'
+                ], 400);
+            }
+
+            // Update workflow engine
+            $workflowEngine->update([
+                'tipe_trx' => $request->tipe_trx,
+                'first_appr' => $request->first_appr,
+                'second_appr' => $request->second_appr,
+                'timestamp' => now()
+            ]);
+
+            // Ambil nama role untuk response
+            $firstRole = Role::find($request->first_appr);
+            $secondRole = $request->second_appr ? Role::find($request->second_appr) : null;
+
+            DB::commit();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'Approval', 'updateEngine');
+
+            $response = [
+                'success' => true,
+                'message' => 'Workflow engine berhasil diupdate',
+                'data' => [
+                    'id' => $workflowEngine->id,
+                    'tipe_trx' => $workflowEngine->tipe_trx,
+                    'first_appr' => $workflowEngine->first_appr,
+                    'first_appr_name' => $firstRole ? $firstRole->name : null,
+                    'second_appr' => $workflowEngine->second_appr,
+                    'second_appr_name' => $secondRole ? $secondRole->name : null,
+                    'timestamp' => now()->format('Y-m-d H:i:s'),
+                    'updated_by' => $fullName
+                ]
+            ];
+
+            // Capture log menggunakan helper SystemLog
+            log_system(
+                'Approval',
+                'Update workflow engine',
+                'updateEngine.ApprovalController',
+                $request->all(),
+                $response
+            );
+
+            return response()->json($response);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollback();
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            Log::error('Error updating workflow engine', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'request_data' => $request->all(),
+                'workflow_id' => $id
+            ]);
+
+            $errorResponse = [
+                'success' => false,
+                'message' => 'Gagal mengupdate workflow engine: ' . $e->getMessage()
+            ];
+
+            // Capture log error menggunakan helper SystemLog
+            log_system(
+                'Approval',
+                'Error updating workflow engine',
+                'updateEngine.ApprovalController',
+                $request->all(),
+                $errorResponse
+            );
+
+            return response()->json($errorResponse, 500);
+        }
+    }
+
+    /**
+     * Get roles untuk dropdown
+     */
+    public function getRolesForDropdown()
+    {
+        try {
+            $roles = Role::select('id', 'name')
+                ->orderBy('name', 'asc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $roles
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting roles for dropdown', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data roles: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -287,8 +287,8 @@ class MasterLovController extends Controller
                     'code' => $lokasi->code,
                     'value' => $lokasi->value,
                     'parent_id' => $lokasi->parent_id,
-                    'created_at' => $lokasi->created_at->format('Y-m-d H:i:s'),
-                    'updated_at' => $lokasi->updated_at->format('Y-m-d H:i:s'),
+                    'created_at' => now()->format('Y-m-d H:i:s'),
+                    'updated_at' => now()->format('Y-m-d H:i:s'),
                     'created_by' => $fullName
                 ]
             ]);

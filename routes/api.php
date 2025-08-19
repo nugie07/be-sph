@@ -17,6 +17,7 @@ use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\SupplierTransporterController;
 use App\Http\Controllers\CustomerDatabaseController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\MasterWilayahController;
 
 
 // Logging
@@ -115,6 +116,11 @@ Route::get('/approval/list', [ApprovalController::class, 'list']);
 Route::get('/approval/details', [ApprovalController::class, 'getApprovalDetails']);
 Route::post('/approval/verify-invoice/{trx_id}', [ApprovalController::class, 'verifyInvoice']);
 
+// Workflow Engine Management
+Route::get('/approval/workflow-engine', [ApprovalController::class, 'listEngine']);
+Route::put('/approval/workflow-engine/{id}', [ApprovalController::class, 'updateEngine']);
+Route::get('/approval/roles-dropdown', [ApprovalController::class, 'getRolesForDropdown']);
+
 // LOV Dropdown
 Route::get('/master-lov/children', [MasterLovController::class, 'getChildren']);
 
@@ -159,6 +165,12 @@ Route::get('/user-management/user/permissions', [UserManagementController::class
 Route::get('/user-management/user/{userId}/permissions', [UserManagementController::class, 'getUserPermissions']);
 Route::post('/user-management/{id}/reset-password', [UserManagementController::class, 'resetPassword']);
 
+// Master Wilayah Management
+Route::get('/master-wilayah', [MasterWilayahController::class, 'getList']);
+Route::post('/master-wilayah', [MasterWilayahController::class, 'createWilayah']);
+Route::put('/master-wilayah/{id}', [MasterWilayahController::class, 'updateWilayah']);
+Route::delete('/master-wilayah/{id}', [MasterWilayahController::class, 'deleteWilayah']);
+Route::get('/master-wilayah/request', [MasterWilayahController::class, 'wilayahRequest']);
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
