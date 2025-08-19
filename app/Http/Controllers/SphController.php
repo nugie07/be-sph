@@ -595,12 +595,12 @@ public function generatePdf($id)
         $settings['other_config']['ASIBLogoBase64'] = $asibLogoBase64;
         $settings['other_config']['GMILogoBase64']  = $gmiLogoBase64;
 
-        // Data customers (OAT) – tetap sama
+        // Data customers (OAT) – sesuai struktur table baru
         $customers = DB::table('oat_customer as a')
             ->leftJoin('master_customer as b', 'b.id', '=', 'a.cust_id')
             ->leftJoin('data_trx_sph as c', 'c.comp_name', '=', 'b.name')
             ->where('c.comp_name', $sph->comp_name)
-            ->select('a.location', 'a.qty', 'a.price')
+            ->select('a.location', 'a.qty', 'a.oat')
             ->get();
 
         // Pilih view sesuai tipe

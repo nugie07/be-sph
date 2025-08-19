@@ -296,9 +296,9 @@
                                     <tbody>
                                         @foreach ($customers as $customer)
                                         <tr style="padding: 0px; margin: 0px;">
-                                            <td>{{ $customer->lokasi }}</td>
+                                            <td>{{ $customer->location }}</td>
                                             <td>{{ $customer->qty }}</td>
-                                            <td>Rp {{ number_format($customer->harga, 2, ',', '.') }}</td>
+                                            <td>{{ $customer->oat }}</td>
                                         </tr>
                                         @endforeach
                                     </tbody>
@@ -317,9 +317,9 @@
                                     <tbody>
                                         @foreach ($leftData as $customer)
                                         <tr style="padding: 0px; margin: 0px;">
-                                            <td>{{ $customer->lokasi }}</td>
+                                            <td>{{ $customer->location }}</td>
                                             <td>{{ $customer->qty }}</td>
-                                            <td>Rp {{ number_format($customer->harga, 2, ',', '.') }}</td>
+                                            <td>{{ $customer->oat }}</td>
                                         </tr>
                                         @endforeach
                                     </tbody>
@@ -337,9 +337,9 @@
                                     <tbody>
                                         @foreach ($rightData as $customer)
                                         <tr style="padding: 0px; margin: 0px;">
-                                            <td>{{ $customer->lokasi }}</td>
+                                            <td>{{ $customer->location }}</td>
                                             <td>{{ $customer->qty }}</td>
-                                            <td>Rp {{ number_format($customer->harga, 2, ',', '.') }}</td>
+                                            <td>{{ $customer->oat }}</td>
                                         </tr>
                                         @endforeach
                                     </tbody>

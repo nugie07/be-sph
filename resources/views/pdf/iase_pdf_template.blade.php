@@ -225,7 +225,7 @@
                                         <thead><tr><th>Lokasi</th><th>Qty</th><th>OAT</th></tr></thead>
                                         <tbody>
                                             @foreach ($leftData as $customer)
-                                            <tr><td>{{ $customer->location }}</td><td>{{ $customer->qty }}</td><td>Rp {{ number_format($customer->price, 2, ',', '.') }}</td></tr>
+                                            <tr><td>{{ $customer->location }}</td><td>{{ $customer->qty }}</td><td>{{ $customer->oat }}</td></tr>
                                             @endforeach
                                         </tbody>
                                     </table>
@@ -236,7 +236,7 @@
                                         <thead><tr><th>Lokasi</th><th>Qty</th><th>OAT</th></tr></thead>
                                         <tbody>
                                             @foreach ($rightData as $customer)
-                                            <tr><td>{{ $customer->location }}</td><td>{{ $customer->qty }}</td><td>Rp {{ number_format($customer->price, 2, ',', '.') }}</td></tr>
+                                            <tr><td>{{ $customer->location }}</td><td>{{ $customer->qty }}</td><td>{{ $customer->oat }}</td></tr>
                                             @endforeach
                                         </tbody>
                                     </table>

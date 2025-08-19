@@ -148,6 +148,8 @@ Route::put('/customer-database/{id}', [CustomerDatabaseController::class, 'updat
 Route::delete('/customer-database/{id}', [CustomerDatabaseController::class, 'destroy']);
 Route::get('/customer-database/list/customers', [CustomerDatabaseController::class, 'getCustomerList']);
 Route::get('/customer-database/list/oat', [CustomerDatabaseController::class, 'getOatList']);
+Route::post('/customer-database/oat', [CustomerDatabaseController::class, 'createOat']);
+Route::put('/customer-database/oat/{id}', [CustomerDatabaseController::class, 'updateOat']);
 Route::delete('/customer-database/oat/{id}', [CustomerDatabaseController::class, 'deleteOat']);
 
 // User Management

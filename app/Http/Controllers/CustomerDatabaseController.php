@@ -546,11 +546,8 @@ class CustomerDatabaseController extends Controller
                     'oc.id',
                     'oc.cust_id',
                     'oc.location',
-                    'oc.detail',
-                    'oc.pic_name',
-                    'oc.pic_contact',
                     'oc.qty',
-                    'oc.price',
+                    'oc.oat',
                     'oc.created_at',
                     'oc.updated_at',
                     'oc.deleted_at',
@@ -662,6 +659,265 @@ class CustomerDatabaseController extends Controller
                 'success' => false,
                 'message' => 'Gagal menghapus OAT customer: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Create OAT customer baru
+     */
+    public function createOat(Request $request)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        $user = User::find($result['id']);
+        $fullName = "{$user->first_name} {$user->last_name}";
+
+        try {
+            // Validasi input
+            $request->validate([
+                'cust_id' => 'required|integer|exists:master_customer,id',
+                'location' => 'required|string|max:255',
+                'qty' => 'required|string|max:255',
+                'oat' => 'required|string|max:255'
+            ]);
+
+            DB::beginTransaction();
+
+            // Cek apakah customer exists dan tidak dihapus
+            $customer = DB::table('master_customer')
+                ->where('id', $request->cust_id)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer tidak ditemukan'
+                ], 404);
+            }
+
+            // Buat OAT customer baru
+            $oatId = DB::table('oat_customer')->insertGetId([
+                'cust_id' => $request->cust_id,
+                'location' => $request->location,
+                'qty' => $request->qty,
+                'oat' => $request->oat,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            // Ambil data yang baru dibuat
+            $newOat = DB::table('oat_customer as oc')
+                ->leftJoin('master_customer as mc', 'mc.id', '=', 'oc.cust_id')
+                ->select([
+                    'oc.id',
+                    'oc.cust_id',
+                    'oc.location',
+                    'oc.qty',
+                    'oc.oat',
+                    'oc.created_at',
+                    'oc.updated_at',
+                    'mc.name as customer_name',
+                    'mc.alias as customer_alias'
+                ])
+                ->where('oc.id', $oatId)
+                ->first();
+
+            DB::commit();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'CustomerDatabase', 'createOat');
+
+            $response = [
+                'success' => true,
+                'message' => 'OAT customer berhasil dibuat',
+                'data' => $newOat
+            ];
+
+            // Capture log menggunakan helper SystemLog
+            log_system(
+                'CustomerDatabase',
+                'Create OAT customer',
+                'createOat.CustomerDatabaseController',
+                $request->all(),
+                $response
+            );
+
+            return response()->json($response, 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollback();
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            Log::error('Error creating OAT customer', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'request_data' => $request->all()
+            ]);
+
+            $errorResponse = [
+                'success' => false,
+                'message' => 'Gagal membuat OAT customer: ' . $e->getMessage()
+            ];
+
+            // Capture log error menggunakan helper SystemLog
+            log_system(
+                'CustomerDatabase',
+                'Error creating OAT customer',
+                'createOat.CustomerDatabaseController',
+                $request->all(),
+                $errorResponse
+            );
+
+            return response()->json($errorResponse, 500);
+        }
+    }
+
+    /**
+     * Update OAT customer berdasarkan ID
+     */
+    public function updateOat(Request $request, $id)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        $user = User::find($result['id']);
+        $fullName = "{$user->first_name} {$user->last_name}";
+
+        try {
+            // Validasi input
+            $request->validate([
+                'cust_id' => 'required|integer|exists:master_customer,id',
+                'location' => 'required|string|max:255',
+                'qty' => 'required|string|max:255',
+                'oat' => 'required|string|max:255'
+            ]);
+
+            DB::beginTransaction();
+
+            // Cek apakah OAT data exists
+            $existingOat = DB::table('oat_customer')
+                ->where('id', $id)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$existingOat) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data OAT tidak ditemukan'
+                ], 404);
+            }
+
+            // Cek apakah customer exists dan tidak dihapus
+            $customer = DB::table('master_customer')
+                ->where('id', $request->cust_id)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer tidak ditemukan'
+                ], 404);
+            }
+
+            // Update OAT customer
+            DB::table('oat_customer')
+                ->where('id', $id)
+                ->update([
+                    'cust_id' => $request->cust_id,
+                    'location' => $request->location,
+                    'qty' => $request->qty,
+                    'oat' => $request->oat,
+                    'updated_at' => now()
+                ]);
+
+            // Ambil data yang sudah diupdate
+            $updatedOat = DB::table('oat_customer as oc')
+                ->leftJoin('master_customer as mc', 'mc.id', '=', 'oc.cust_id')
+                ->select([
+                    'oc.id',
+                    'oc.cust_id',
+                    'oc.location',
+                    'oc.qty',
+                    'oc.oat',
+                    'oc.created_at',
+                    'oc.updated_at',
+                    'mc.name as customer_name',
+                    'mc.alias as customer_alias'
+                ])
+                ->where('oc.id', $id)
+                ->first();
+
+            DB::commit();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'CustomerDatabase', 'updateOat');
+
+            $response = [
+                'success' => true,
+                'message' => 'OAT customer berhasil diupdate',
+                'data' => $updatedOat
+            ];
+
+            // Capture log menggunakan helper SystemLog
+            log_system(
+                'CustomerDatabase',
+                'Update OAT customer',
+                'updateOat.CustomerDatabaseController',
+                $request->all(),
+                $response
+            );
+
+            return response()->json($response);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollback();
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            Log::error('Error updating OAT customer', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'request_data' => $request->all(),
+                'oat_id' => $id
+            ]);
+
+            $errorResponse = [
+                'success' => false,
+                'message' => 'Gagal mengupdate OAT customer: ' . $e->getMessage()
+            ];
+
+            // Capture log error menggunakan helper SystemLog
+            log_system(
+                'CustomerDatabase',
+                'Error updating OAT customer',
+                'updateOat.CustomerDatabaseController',
+                $request->all(),
+                $errorResponse
+            );
+
+            return response()->json($errorResponse, 500);
         }
     }
 }
