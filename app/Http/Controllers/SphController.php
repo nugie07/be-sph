@@ -120,6 +120,25 @@ public function store(Request $request)
             $sph->status       = 1;
             $sph->save();
 
+            // Update master_customer dengan pic_name dan pic_contact
+            try {
+                $masterCustomer = MasterCustomer::where('name', $sph->comp_name)->first();
+                if ($masterCustomer) {
+                    $masterCustomer->update([
+                        'pic_name' => $sph->pic,
+                        'pic_contact' => $sph->contact_no
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Log error tapi tidak menghentikan proses
+                Log::warning('Failed to update master_customer', [
+                    'comp_name' => $sph->comp_name,
+                    'pic' => $sph->pic,
+                    'contact_no' => $sph->contact_no,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
             // Buat workflow record dan remark menggunakan helper
             WorkflowHelper::createWorkflowWithRemark(
                 $sph->id,
