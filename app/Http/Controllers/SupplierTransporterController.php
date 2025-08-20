@@ -214,7 +214,6 @@ class SupplierTransporterController extends Controller
                 'contact_no' => 'required|string|max:20',
                 'email' => 'required|email|max:255',
                 'address' => 'required|string|max:500',
-                'status' => 'required|in:0,1',
                 'category' => 'required|in:1,2' // 1=Supplier, 2=Transporter
             ]);
 
@@ -237,7 +236,7 @@ class SupplierTransporterController extends Controller
                 'contact_no' => $request->contact_no,
                 'email' => $request->email,
                 'address' => $request->address,
-                'status' => $request->status,
+                'status' => 1,
                 'category' => $request->category,
                 'created_at' => now(),
                 'updated_at' => now()
