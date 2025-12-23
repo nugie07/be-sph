@@ -134,8 +134,8 @@
             <table>
                 <tr>
                     <td width="12%" style="vertical-align:top;">
-                        @php
-                            $logoSrc = $logoBase64 ?? ($settings['other_config']['LogoBase64'] ?? null);
+                    @php
+                            $logoSrc = 'https://is3.cloudhost.id/bensinkustorage/logo/mina-marret-logo.png';
                         @endphp
                         @if(!empty($logoSrc))
                             <img src="{{ $logoSrc }}" alt="Logo" style="width:90px; height:auto; object-fit:contain; display:block; margin:0 auto;">

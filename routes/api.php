@@ -43,11 +43,17 @@ Route::get('/get-customers', [SphController::class, 'getCustomers']);
 Route::get('/get-products', [SphController::class, 'getProducts']);
 Route::get('/get-customer-detail', [SphController::class, 'getCustomerDetail']);
 Route::post('/sph/store', [SphController::class, 'store']);
+Route::post('/sph/update', [SphController::class, 'updateSph']);
+Route::post('/sph/store-details', [SphController::class, 'SphStoreDetails']);
+Route::post('/sph/validator', [SphController::class, 'SphValidator']);
 Route::get('sph/{id}/remarks', [SphController::class, 'remarks']);
 Route::delete('/sph/{id}', [SphController::class, 'destroy']);
 Route::post('/sph/{id}/approval', [SphController::class, 'approveSph']);
 Route::post('/send-sph-mail', [SphController::class, 'send']);
 Route::post('/sph/{id}/generate-pdf', [SphController::class, 'generatePdf']);
+Route::get('/sph/{id}/details', [SphController::class, 'generateKmpPdf']);
+Route::post('/sph/{id}/generate-kmp-pdf', [SphController::class, 'generateKmpPdfFile']);
+Route::get('/sph/details', [SphController::class, 'sphDetails']);
 
 // File Upload
 Route::post('/upload', [FileUploadController::class, 'upload']);
@@ -59,6 +65,11 @@ Route::get('/good-receipts/pdf/{path}', [GoodReceiptController::class, 'viewPdf'
 Route::post('/good-receipts/{id}/revisi', [GoodReceiptController::class, 'revisi']);
 Route::post('/tambah-good-receipts', [GoodReceiptController::class, 'tambahGr']);
 Route::post('/good-receipts/{id}/cancel', [GoodReceiptController::class, 'cancelPo']);
+Route::get('/good-receipts/sph-approved', [GoodReceiptController::class, 'sphApproved']);
+Route::post('/good-receipts/tambah-po', [GoodReceiptController::class, 'tambahPo']);
+
+// Remark API - harus ditempatkan sebelum route general /{id}
+Route::get('/remarks/{id}', [AuthController::class, 'remarks']);
 
 // DRS
 Route::get('/delivery-request', [DeliveryRequestController::class, 'index']);
@@ -85,6 +96,11 @@ Route::post('purchase-order/verify/{id}', [PurchaseOrderController::class, 'veri
 Route::post('/purchase-order/{id}/generate-pdf', [PurchaseOrderController::class, 'generatePDF']);
 Route::get('/purchase-order/payment/list', [PurchaseOrderController::class, 'listPayment']);
 Route::post('/purchase-order/payment/upload', [PurchaseOrderController::class, 'uploadPaymentReceipt']);
+Route::get('/good_receipt/gr_list_no', [PurchaseOrderController::class, 'grListNo']);
+Route::get('/good_receipt/gr_detail/{po_no}', [PurchaseOrderController::class, 'grDetail']);
+Route::get('/list/purchase-order/supplier/approve', [PurchaseOrderController::class, 'listPurchaseOrderSupplierApprove']);
+Route::get('/list/purchase-order/supplier/approve/{po_no}', [PurchaseOrderController::class, 'getPurchaseOrderSupplierApproveDetail']);
+Route::get('/list/purchase-order/supplier/{id}/details', [PurchaseOrderController::class, 'listPurchaseOrderSupplierDetails']);
 
 
 // Delivery Note API
@@ -109,12 +125,16 @@ Route::put('/finance/invoices/{id}', [FinanceInvoiceController::class, 'update']
 Route::post('/invoices', [FinanceInvoiceController::class, 'store'])->name('invoices.store');
 Route::post('/finance/generate-invoice-no', [FinanceInvoiceController::class, 'generateInvoiceNo']);
 Route::post('/finance/get-customer-by-po', [FinanceInvoiceController::class, 'getCustomerByPo']);
+Route::get('/finance/dn-list-invoice', [FinanceInvoiceController::class, 'dnlistinvoice']);
+Route::get('/finance/generate-cust-data', [FinanceInvoiceController::class, 'generateCustData']);
+Route::get('/finance/generate-po-customer', [FinanceInvoiceController::class, 'generatePoCustomer']);
 
 
 // Approval API
 Route::get('/approval/list', [ApprovalController::class, 'list']);
 Route::get('/approval/details', [ApprovalController::class, 'getApprovalDetails']);
 Route::post('/approval/verify-invoice/{trx_id}', [ApprovalController::class, 'verifyInvoice']);
+Route::get('/approval/generate-invoice-pdf/{invoiceId}', [ApprovalController::class, 'generateInvoicePDFApi']);
 
 // Workflow Engine Management
 Route::get('/approval/workflow-engine', [ApprovalController::class, 'listEngine']);
@@ -130,8 +150,8 @@ Route::post('/master-lov/lokasi', [MasterLovController::class, 'createLokasi']);
 Route::put('/master-lov/lokasi/{id}', [MasterLovController::class, 'updateLokasi']);
 Route::delete('/master-lov/lokasi/{id}', [MasterLovController::class, 'deleteLokasi']);
 
-// Remark API
-Route::get('/remarks/{id}', [AuthController::class, 'remarks']);
+// New: SPH Template list
+Route::get('/master-lov/sph_template', [MasterLovController::class, 'sph_template']);
 
 // Supplier Transporter Management
 Route::get('/supplier-transporter', [SupplierTransporterController::class, 'index']);

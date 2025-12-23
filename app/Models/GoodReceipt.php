@@ -8,7 +8,7 @@ class GoodReceipt extends Model
 {
     protected $table = 'good_receipt';
     protected $fillable = [
-        'kode_sph', 'nama_customer', 'po_no', 'po_file', 'sub_total',
+        'kode_sph', 'nama_customer', 'po_no', 'no_seq', 'po_file', 'sub_total',
         'ppn', 'pbbkb', 'pph', 'total', 'terbilang', 'status', 'revisi_count', 'created_at', 'updated_at'
     ];
 

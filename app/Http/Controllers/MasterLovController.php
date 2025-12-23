@@ -420,4 +420,38 @@ class MasterLovController extends Controller
             ], 500);
         }
     }
+    /**
+     * List data from sph_template table
+     */
+    public function sph_template(Request $request)
+    {
+        try {
+            $tipe = $request->get('tipe', $request->get('type'));
+
+            $query = DB::table('sph_template')
+                ->select('id', 'tipe', 'nama', 'form', 'template', 'created_at', 'updated_at');
+
+            if (!empty($tipe)) {
+                $query->where('tipe', $tipe);
+            }
+
+            $data = $query->orderByDesc('id')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching sph_template list', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

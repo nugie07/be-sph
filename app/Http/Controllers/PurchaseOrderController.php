@@ -17,6 +17,7 @@ use App\Helpers\WorkflowHelper;
 use App\Helpers\AuthValidator;
 use App\Helpers\UserSysLogHelper;
 use App\Models\GoodReceipt;
+use App\Models\DataTrxSph;
 
 class PurchaseOrderController extends Controller
 {
@@ -179,7 +180,22 @@ public function poTransporter(Request $request)
             return response()->json(['message' => 'Data vendor tidak ditemukan'], 422);
         }
 
-        // 2. Ambil format vendor_po
+        // 2. Validasi: Cek apakah nomor DN sudah digunakan di purchase_order
+        $dnNo = $request->input('dn_no');
+        if ($dnNo) {
+            $existingDn = PurchaseOrder::where('dn_no', $dnNo)->first();
+            if ($existingDn) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nomer DN sudah di gunakan , gunakan nomer yang lain'
+                ], 422);
+            }
+        }
+
+        // 3. Ambil atau generate vendor_po
+        // Gunakan vendor_po dari payload jika ada, jika tidak generate otomatis
+        $vendor_po = $request->input('vendor_po');
+        if (!$vendor_po) {
         $format = $vendor->format; // contoh: {nomor}/MMLN-AJS/{bulan}/{tahun}
         $dnNomer = $request->input('dn_no'); // misal: 03.032
 
@@ -190,13 +206,15 @@ public function poTransporter(Request $request)
             [$dnNomer, $dnNomer, $bulanRomawi, $bulanRomawi, $tahunFull, $tahunFull],
             $format
         );
+        }
 
         $now = Carbon::now()->format('Y-m-d');
 
-        // 3. Buat PO
+        // 4. Buat PO
         $po = new PurchaseOrder();
-        $po->drs_no       = $request->input('drs_no');
-        $po->drs_unique   = $request->input('drs_unique');
+        $po->dn_no        = $request->input('dn_no') ?: null;
+        $po->drs_no       = $request->input('drs_no') ?: null;
+        $po->drs_unique   = $request->input('drs_unique') ?: null;
         $po->customer_po  = $request->input('customer_po');
         $po->vendor_name  = $vendorName;
         $po->vendor_po    = $vendor_po;
@@ -204,9 +222,23 @@ public function poTransporter(Request $request)
         $po->nama         = $request->input('pic_site');
         $po->alamat       = $request->input('site_location');
         $po->contact      = $request->input('pic_site_telp');
+        $po->fob          = $request->input('fob');
+        $po->term         = $request->input('term');
+        $po->transport    = $request->input('harga');
+        $po->loading_point = $request->input('loading_point');
+        $po->shipped_via  = $request->input('shipped_via');
+        $po->delivery_to  = $request->input('delivery_to');
         $po->qty          = $request->input('qty');
+        $po->harga        = $request->input('harga');
+        $po->ppn          = $request->input('ppn');
+        $po->sub_total    = $request->input('sub_total');
+        $po->total        = $request->input('total');
+        $po->terbilang    = $request->input('terbilang');
+        $po->special_notes = $request->input('special_notes');
+        $po->description = $request->input('description');
+        $po->portal = $request->input('portal');
         $po->category     = 2; // Transporter
-        $po->status       = 0; // Draft
+        $po->status       = 1; // Menunggu Approval
         $po->created_by   = $fullName;
         $po->last_updateby = $fullName;
         $po->created_at   = now();
@@ -214,8 +246,8 @@ public function poTransporter(Request $request)
         $po->save();
 
         // Buat workflow record dan remark menggunakan helper
-        // trx_id seharusnya ID purchase_order yang baru dibuat
-        $poId = $po->drs_unique;
+        // trx_id menggunakan ID purchase_order yang baru dibuat
+        $poId = $po->id;
         $timestamp = Carbon::now()->format('Y-m-d H:i:s');
         WorkflowHelper::createWorkflowWithRemark(
             $poId,
@@ -292,7 +324,7 @@ public function update(Request $request, $po_id)
         $po->status = 1;
         $po->save();
 
-        $poId = $po->drs_unique;
+        $poId = $po->id;
         $vendor_po = $po->vendor_po;
         $timestamp = Carbon::now()->format('Y-m-d H:i:s');
         WorkflowHelper::createWorkflowWithRemark(
@@ -348,7 +380,7 @@ public function verify(Request $request, $poId)
         try {
             // 1. Check active workflow_record
             $wf = DB::table('workflow_record')
-                ->where('trx_id', $po->drs_unique)
+                ->where('trx_id', $po->id)
                 ->where('tipe_trx', $cat)
                 ->where('wf_status', 1)
                 ->lockForUpdate()
@@ -428,7 +460,7 @@ public function verify(Request $request, $poId)
             $msg = "User {$fullName} {$action} PO {$po->vendor_po}: {$validated['verify_comment']}";
 
             WorkflowHelper::createWorkflowWithRemark(
-                $po->drs_unique,
+                $po->id,
                 $cat,
                 $msg,
                 $fullName
@@ -461,8 +493,9 @@ public function savePoSupplier(Request $request)
         $fullName  = "{$user->first_name} {$user->last_name}";
         // Validasi
         $validated = $request->validate([
-            'drs_no'          => 'required|string',
-            'drs_unique'      => 'required|string',
+            'drs_no'          => 'nullable|string',
+            'drs_unique'      => 'nullable|string',
+            'po_no'           => 'nullable|string', // dari frontend, akan di-map ke customer_po
             'customer_po'     => 'nullable|string',
             'vendor_name'     => 'required|string',
             'vendor_po'       => 'required|string',
@@ -472,7 +505,6 @@ public function savePoSupplier(Request $request)
             'contact'         => 'nullable|string',
             'fob'             => 'nullable|string',
             'term'            => 'nullable|string',
-            'transport'       => 'nullable|numeric',
             'loading_point'   => 'nullable|string',
             'shipped_via'     => 'nullable|string',
             'delivery_to'     => 'nullable|string',
@@ -494,19 +526,19 @@ public function savePoSupplier(Request $request)
 
         // Simpan ke database
         $po = new PurchaseOrder();
-        $po->drs_no          = $validated['drs_no'];
-        $po->drs_unique      = $validated['drs_unique'];
-        $po->customer_po     = $validated['customer_po'];
+        $po->drs_no          = $validated['drs_no'] ?? null;
+        $po->drs_unique      = !empty($validated['drs_unique']) ? $validated['drs_unique'] : null;
+        // Map po_no dari frontend ke customer_po, atau gunakan customer_po jika ada
+        $po->customer_po     = $validated['po_no'] ?? $validated['customer_po'] ?? null;
         $po->vendor_name     = $validated['vendor_name'];
         $po->vendor_po       = $validated['vendor_po'];
         $po->tgl_po          = $validated['tgl_po'];
         $po->nama            = $validated['nama'];
         $po->alamat          = $validated['alamat'];
         $po->contact         = $validated['contact'];
-        $po->fob             = $validated['fob'];
-        $po->term            = $validated['term'];
-        $po->transport       = $validated['transport'];
-        $po->loading_point   = $validated['loading_point'];
+            $po->fob             = $validated['fob'];
+            $po->term            = $validated['term'];
+            $po->loading_point   = $validated['loading_point'];
         $po->shipped_via     = $validated['shipped_via'];
         $po->delivery_to     = $validated['delivery_to'];
         $po->qty             = $validated['qty'];
@@ -525,9 +557,14 @@ public function savePoSupplier(Request $request)
         $po->created_by      = $fullName;
         $po->save();
 
-        $poId = $po->drs_unique;
         $vendor_po = $po->vendor_po;
         $timestamp = Carbon::now()->format('Y-m-d H:i:s');
+        
+        // WorkflowHelper mengharapkan int untuk trxId
+        // Gunakan po->id karena trx_id di workflow_record adalah int
+        // dan po->id selalu int dan tidak null
+        $poId = $po->id;
+        
         WorkflowHelper::createWorkflowWithRemark(
             $poId,
             'po_supplier',
@@ -1029,6 +1066,313 @@ public function listPayment(Request $request)
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal upload bukti pembayaran: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get list of po_no from good_receipt
+     * Endpoint: GET /good_receipt/gr_list_no
+     */
+    public function grListNo(Request $request)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        try {
+            // Ambil list po_no dari good_receipt
+            $poList = GoodReceipt::select('po_no')
+                ->whereNotNull('po_no')
+                ->where('po_no', '!=', '')
+                ->distinct()
+                ->orderBy('po_no', 'asc')
+                ->get()
+                ->pluck('po_no');
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'PurchaseOrder', 'grListNo');
+
+            return response()->json([
+                'success' => true,
+                'data' => $poList->values()->all()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting GR list no', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get detail good_receipt by po_no
+     * Endpoint: GET /good_receipt/gr_detail/{po_no}
+     */
+    public function grDetail(Request $request, $po_no)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        try {
+            // Ambil detail good_receipt berdasarkan po_no dengan join ke data_trx_sph untuk mendapatkan tipe_sph
+            $gr = GoodReceipt::where('good_receipt.po_no', $po_no)
+                ->leftJoin('data_trx_sph', function($join) {
+                    $join->on('data_trx_sph.kode_sph', '=', 'good_receipt.kode_sph')
+                         ->whereRaw('data_trx_sph.id = (SELECT MAX(id) FROM data_trx_sph WHERE kode_sph = good_receipt.kode_sph)');
+                })
+                ->select(
+                    'good_receipt.po_no',
+                    'good_receipt.no_seq',
+                    'good_receipt.total',
+                    'data_trx_sph.tipe_sph'
+                )
+                ->first();
+
+            if (!$gr) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data good receipt dengan po_no ' . $po_no . ' tidak ditemukan'
+                ], 404);
+            }
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'PurchaseOrder', 'grDetail');
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'po_no' => $gr->po_no,
+                    'no_seq' => $gr->no_seq,
+                    'total' => $gr->total,
+                    'tipe_sph' => $gr->tipe_sph
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting GR detail', [
+                'po_no' => $po_no,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * List Purchase Order Supplier yang sudah approved
+     * Endpoint: GET /list/purchase-order/supplier/approve
+     */
+    public function listPurchaseOrderSupplierApprove(Request $request)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        try {
+            // Query: SELECT id, po_no as customer_po FROM good_receipt
+            $data = DB::table('good_receipt')
+                ->select('id','nama_customer', DB::raw('po_no as customer_po'))
+                ->get();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'PurchaseOrder', 'listPurchaseOrderSupplierApprove');
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'total' => $data->count()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting approved supplier PO list', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get detail Purchase Order Supplier by po_no dengan validasi
+     * Endpoint: GET /list/purchase-order/supplier/approve/{po_no}
+     */
+    public function getPurchaseOrderSupplierApproveDetail(Request $request, $po_no)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        try {
+            // Check 1: SELECT id, po_no FROM good_receipt 
+            // WHERE status = 4 AND bypass = 1 AND po_no = '{po_no}'
+            $check1 = DB::table('good_receipt')
+                ->where('status', 0)
+                ->where('bypass', 1)
+                ->where('po_no', $po_no)
+                ->select('id', 'po_no','no_seq','nama_customer')
+                ->first();
+
+            if ($check1) {
+                // Log aktivitas user
+                UserSysLogHelper::logFromAuth($result, 'PurchaseOrder', 'getPurchaseOrderSupplierApproveDetail');
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Data ditemukan (Check 1)',
+                    'data' => $check1
+                ], 200);
+            }
+
+            // Check 2: SELECT gr.id, gr.po_no as customer_po FROM good_receipt gr
+            // LEFT JOIN purchase_order po ON po.customer_po = gr.po_no
+            // WHERE gr.po_no = '{po_no}' AND po.status = 4
+            $check2 = DB::table('good_receipt as gr')
+                ->leftJoin('purchase_order as po', 'po.customer_po', '=', 'gr.po_no')
+                ->where('gr.po_no', $po_no)
+                ->where('po.status', 4)
+                ->select('gr.id','gr.no_seq','gr.nama_customer', DB::raw('gr.po_no as customer_po'))
+                ->first();
+
+            if ($check2) {
+                // Log aktivitas user
+                UserSysLogHelper::logFromAuth($result, 'PurchaseOrder', 'getPurchaseOrderSupplierApproveDetail');
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Data ditemukan (Check 2)',
+                    'data' => $check2
+                ], 200);
+            }
+
+            // Jika tidak ada di kedua check, return HTTP 400 dengan message
+            return response()->json([
+                'success' => false,
+                'message' => 'Hubungi Finance untuk membuat PO Supplier terlebih dahulu'
+            ], 400);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting approved supplier PO detail', [
+                'po_no' => $po_no,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get detail Purchase Order Supplier by ID
+     * Endpoint: GET /list/purchase-order/supplier/{id}/details
+     */
+    public function listPurchaseOrderSupplierDetails(Request $request, $id)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        try {
+            // Ambil data purchase_order berdasarkan id
+            $purchaseOrder = PurchaseOrder::find($id);
+            
+            if (!$purchaseOrder) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Purchase Order tidak ditemukan'
+                ], 404);
+            }
+
+            // Ambil data data_trx_sph melalui relasi: customer_po -> good_receipt -> kode_sph -> data_trx_sph
+            $dataTrxSph = null;
+            if ($purchaseOrder->customer_po) {
+                $goodReceipt = GoodReceipt::where('po_no', $purchaseOrder->customer_po)->first();
+                if ($goodReceipt && $goodReceipt->kode_sph) {
+                    $dataTrxSph = DataTrxSph::where('kode_sph', $goodReceipt->kode_sph)->first();
+                }
+            }
+
+            if (!$dataTrxSph) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data SPH tidak ditemukan untuk Purchase Order ini'
+                ], 404);
+            }
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'PurchaseOrder', 'listPurchaseOrderSupplierDetails');
+
+            // Return kolom-kolom yang diminta dari data_trx_sph
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $dataTrxSph->id,
+                    'template_id' => $dataTrxSph->template_id,
+                    'tipe_sph' => $dataTrxSph->tipe_sph,
+                    'kode_sph' => $dataTrxSph->kode_sph,
+                    'comp_name' => $dataTrxSph->comp_name,
+                    'pic' => $dataTrxSph->pic,
+                    'contact_no' => $dataTrxSph->contact_no,
+                    'product' => $dataTrxSph->product,
+                    'price_liter' => $dataTrxSph->price_liter,
+                    'biaya_lokasi' => $dataTrxSph->biaya_lokasi,
+                    'ppn' => $dataTrxSph->ppn,
+                    'pbbkb' => $dataTrxSph->pbbkb,
+                    'total_price' => $dataTrxSph->total_price,
+                    'oat' => $dataTrxSph->oat,
+                    'ppn_oat' => $dataTrxSph->ppn_oat,
+                    'oat_lokasi' => $dataTrxSph->oat_lokasi,
+                    'pay_method' => $dataTrxSph->pay_method,
+                    'susut' => $dataTrxSph->susut,
+                    'note_berlaku' => $dataTrxSph->note_berlaku,
+                    'status' => $dataTrxSph->status,
+                    'file_sph' => $dataTrxSph->file_sph,
+                    'created_by' => $dataTrxSph->created_by,
+                    'created_by_id' => $dataTrxSph->created_by_id,
+                    'last_updateby' => $dataTrxSph->last_updateby,
+                    'created_at' => $dataTrxSph->created_at,
+                    'updated_at' => $dataTrxSph->updated_at,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting purchase order supplier details', [
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -119,14 +119,14 @@
 
         <!-- Top Centered Logo (IASE) -->
         @php
-            $logoSrc = $logoBase64 ?? ($settings['other_config']['LogoBase64'] ?? null);
+            $logoSrc = 'https://is3.cloudhost.id/bensinkustorage/logo/iase_logo.png';
         @endphp
-        <div style="text-align:center; margin-bottom: 5px;">
+        <div style="text-align:center; margin-bottom: 0;">
             @if(!empty($logoSrc))
                 <!-- FIX: Mengurangi tinggi logo agar tidak memakan banyak tempat -->
-                <img src="{{ $logoSrc }}" alt="Logo" style="height:135px; width:auto; object-fit:contain;">
+                <img src="{{ $logoSrc }}" alt="Logo" style="height:85px; width:auto; object-fit:contain;">
             @else
-                <div style="height:135px; width:210px; border:1px solid #ccc; display:inline-flex; align-items:center; justify-content:center; font-size:11px;">LOGO</div>
+                <div style="height:85px; width:180px; border:1px solid #ccc; display:inline-flex; align-items:center; justify-content:center; font-size:10px;">LOGO</div>
             @endif
         </div>
         <div class="header">

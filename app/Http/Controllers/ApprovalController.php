@@ -113,6 +113,7 @@ public function list(Request $request)
         }
     }
 
+    
     /**
      * Mengambil data detail approval untuk setiap tipe
      */
@@ -125,24 +126,53 @@ public function getApprovalDetails(Request $request)
 
         try {
                                     // SPH Approval Details
-            $sphData = DataTrxSph::where('status', 1)
-                ->select('id', 'tipe_sph', 'kode_sph', 'comp_name', 'product', 'price_liter', 'ppn', 'pbbkb', 'total_price', 'pay_method', 'created_at', 'created_by')
+            $sphItems = DataTrxSph::where('status', 1)
+                ->select('id', 'tipe_sph', 'kode_sph', 'comp_name', 'product', 'price_liter', 'ppn', 'pbbkb', 'total_price', 'pay_method', 'susut', 'note_berlaku', 'oat', 'ppn_oat', 'oat_lokasi', 'created_at', 'created_by', 'template_id')
                 ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(function ($item) {
+                ->get();
+
+            // Prefetch form from sph_template for all template_ids present
+            $templateIds = $sphItems->pluck('template_id')->filter()->unique();
+            $templateFormById = collect();
+            if ($templateIds->isNotEmpty()) {
+                $templateFormById = DB::table('sph_template')
+                    ->whereIn('id', $templateIds)
+                    ->pluck('form', 'id');
+            }
+
+            // Prefetch sph_details grouped by sph_id to avoid N+1
+            $sphIds = $sphItems->pluck('id');
+            $detailsBySphId = collect();
+            if ($sphIds->isNotEmpty()) {
+                $detailsBySphId = DB::table('sph_details')
+                    ->whereIn('sph_id', $sphIds)
+                    ->get()
+                    ->groupBy('sph_id');
+            }
+
+            $sphData = $sphItems->map(function ($item) use ($templateFormById, $detailsBySphId) {
                     return [
                         'id' => $item->id,
                         'tipe_sph' => $item->tipe_sph ?? '-',
                         'no_sph' => $item->kode_sph,
                         'nama_perusahaan' => $item->comp_name ?? 'Unknown Customer',
                         'produk_dibeli' => $item->product ?? 'Solar HSD B35',
-                        'harga_per_liter' => $item->price_liter ? number_format($item->price_liter, 0, ',', '.') : '15.000',
-                        'ppn' => $item->ppn ? number_format($item->ppn, 0, ',', '.') : '825.000',
-                        'pbbkb' => $item->pbbkb ? number_format($item->pbbkb, 0, ',', '.') : '562.500',
-                        'total_harga' => $item->total_price ? number_format($item->total_price, 0, ',', '.') : '0',
+                        'harga_per_liter' => $item->price_liter ? number_format($item->price_liter, 0, ',', '.') : '-',
+                        'ppn' => $item->ppn ? number_format($item->ppn, 0, ',', '.') : '-',
+                        'pbbkb' => $item->pbbkb ? number_format($item->pbbkb, 0, ',', '.') : '-',
+                        'total_harga' => $item->total_price ? number_format($item->total_price, 0, ',', '.') : '-',
                         'metode_pembayaran' => $item->pay_method ?? 'TOP 30 Hari',
+                        'pay_method' => $item->pay_method,
+                        'susut' => $item->susut,
+                        'note_berlaku' => $item->note_berlaku,
+                        'oat' => $item->oat,
+                        'ppn_oat' => $item->ppn_oat,
+                        'oat_lokasi' => $item->oat_lokasi,
                         'created_at' => $item->created_at ? Carbon::parse($item->created_at)->format('Y-m-d H:i') : '',
-                        'created_by' => $item->created_by
+                        'created_by' => $item->created_by,
+                        'template_id' => $item->template_id,
+                        'template_form' => $templateFormById->get($item->template_id) ?? $templateFormById->get((string) $item->template_id) ?? null,
+                        'details' => ($detailsBySphId->get($item->id) ?? collect())->values(),
                     ];
                 });
 
@@ -155,7 +185,7 @@ public function getApprovalDetails(Request $request)
                 ->map(function ($item) {
                     return [
                         'id' => $item->id,
-                        'trxId' => $item->drs_unique ?? '-',
+                        'trxId' => $item->id ?? '-',
                         'drs_no' => $item->drs_no ?? '-',
                         'customer_po' => $item->customer_po ?? '-',
                         'vendor_name' => $item->vendor_name ?? '-',
@@ -194,7 +224,7 @@ public function getApprovalDetails(Request $request)
                 ->map(function ($item) {
                     return [
                         'id' => $item->id,
-                        'trxId' => $item->drs_unique ?? '-',
+                        'trxId' => $item->id ?? '-',
                         'drs_no' => $item->drs_no ?? '-',
                         'customer_po' => $item->customer_po ?? '-',
                         'vendor_name' => $item->vendor_name ?? '-',
@@ -404,6 +434,24 @@ public function verifyInvoice(Request $request, $trx_id)
         }
     }
 
+    /**
+     * Generate Invoice PDF via API endpoint
+     * Endpoint: GET /approval/generate-invoice-pdf/{invoiceId}
+     */
+    public function generateInvoicePDFApi(Request $request, $invoiceId)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        return $this->generateInvoicePDF($invoiceId);
+    }
+
+    /**
+     * Generate Invoice PDF (internal function)
+     * Can be called directly or via API endpoint
+     */
     public function generateInvoicePDF($invoiceId)
     {
         try {
@@ -412,8 +460,28 @@ public function verifyInvoice(Request $request, $trx_id)
             // Get invoice details
             $details = InvoiceDetail::where('invoice_id', $invoiceId)->get();
 
-            // Determine template
-            $template = 'pdf.invoice_mmtei';
+            // Get dn_no from invoice
+            $dnNo = $invoice->dn_no ?? '';
+
+            // Determine template based on dn_no
+            // If first 4 characters of dn_no is "IASE", use invoice_iase template
+            // Otherwise, use invoice_mmtei template
+            $template = 'pdf.invoice_mmtei'; // default template
+            if (!empty($dnNo) && strlen($dnNo) >= 4) {
+                $firstFourChars = strtoupper(substr($dnNo, 0, 4));
+                if ($firstFourChars === 'IASE') {
+                    $template = 'pdf.invoice_iase';
+                }
+            }
+
+            // Validate template exists before proceeding
+            if (!view()->exists($template)) {
+                Log::error('Template not found', ['template' => $template, 'dn_no' => $dnNo]);
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Template not found: ' . $template
+                ], 500);
+            }
 
             // Prepare data for PDF template
             $invoiceData = [
@@ -426,26 +494,25 @@ public function verifyInvoice(Request $request, $trx_id)
                 'sent_via' => $invoice->sent_via,
                 'sent_date' => $invoice->sent_date ? Carbon::parse($invoice->sent_date)->format('d/m/Y') : '',
                 'bill_to' => $invoice->bill_to,
+                'bill_to_address' => $invoice->bill_to_address ?? '',
                 'ship_to' => $invoice->ship_to,
+                'ship_to_address' => $invoice->ship_to_address ?? '',
                 'sub_total' => $invoice->sub_total ?? 0,
                 'diskon' => $invoice->diskon ?? 0,
                 'ppn' => $invoice->ppn ?? 0,
                 'pbbkb' => $invoice->pbbkb ?? 0,
                 'pph' => $invoice->pph ?? 0,
+                'oat' => $invoice->oat ?? 0,
+                'transport' => $invoice->transport ?? 0,
                 'total' => $invoice->total ?? 0,
                 'terbilang' => $invoice->terbilang ?? '-'
             ];
 
-            Log::info('Invoice data prepared', ['invoice_data' => $invoiceData]);
-
-            // Check if template exists
-            if (!view()->exists($template)) {
-                Log::error('Template not found', ['template' => $template]);
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Template not found: ' . $template
-                ], 500);
-            }
+            Log::info('Invoice data prepared', [
+                'invoice_data' => $invoiceData,
+                'dn_no' => $dnNo,
+                'template_selected' => $template
+            ]);
 
             // Generate PDF
             Log::info('Starting PDF generation with template', ['template' => $template]);

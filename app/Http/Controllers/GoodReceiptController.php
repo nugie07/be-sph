@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use App\Helpers\AuthValidator;
 use Illuminate\Support\Facades\Mail;
@@ -15,6 +16,7 @@ use App\Models\DetailGoodReceipt;
 use App\Models\RevGoodReceipt;
 use App\Models\User;
 use App\Models\DataTrxSph;
+use App\Models\MasterLov;
 use App\Helpers\UserSysLogHelper;
 
 class GoodReceiptController extends Controller
@@ -27,15 +29,19 @@ public function list(Request $request)
             }
         $user = User::find($result['id']);
         // Query utama (good_receipt sebagai tabel utama)
-        $data = DB::table('good_receipt as b')
-            ->leftJoin('data_trx_sph as a', 'a.kode_sph', '=', 'b.kode_sph')
-            ->select([
+		$data = DB::table('good_receipt as b')
+			// Join ke baris terakhir (MAX(id)) dari data_trx_sph per kode_sph agar tidak duplikat
+			->leftJoin('data_trx_sph as a', function($join){
+				$join->on('a.kode_sph', '=', 'b.kode_sph')
+					->whereRaw('a.id = (SELECT MAX(id) FROM data_trx_sph WHERE kode_sph = b.kode_sph)');
+			})
+			->select([
                 'b.id as po_id',
                 'a.tipe_sph',
                 'a.kode_sph',
                 'a.comp_name',
                 'a.product',
-                'a.total_price',
+                'b.total as total_price', // Ambil dari good_receipt.total (alias total_harga di response)
                 'a.created_by',
                 'b.po_no',
                 'b.po_file',
@@ -127,6 +133,9 @@ public function update(Request $request, $po_id)
         }
         $data = $request->validate([
             'po_no'      => 'required|string|min:3',
+            'no_seq'     => 'nullable|string',
+            'wilayah'    => 'required|string',
+            'source'     => 'required|string',
             'sub_total'  => 'required|numeric',
             'ppn'        => 'required|numeric',
             'pbbkb'      => 'required|numeric',
@@ -159,6 +168,7 @@ public function update(Request $request, $po_id)
                 ]);
             }
             $gr->po_no     = $data['po_no'];
+            $gr->no_seq    = $data['no_seq'] ?? null;
             $gr->sub_total = $data['sub_total'];
             $gr->ppn       = $data['ppn'];
             $gr->pbbkb     = $data['pbbkb'];
@@ -192,20 +202,28 @@ public function update(Request $request, $po_id)
                 ]);
             }
 
+            // 3) Update sequence berdasarkan source dan wilayah
+            $this->updateSequence($gr->kode_sph, $data['source'], $data['wilayah']);
+
             DB::commit();
             // Kirim email notification ke user yang berhak
-            $pofile = "https://is3.cloudhost.id/bensinkustorage/$gr->po_file";
-            $validatedForMail = [
-                'no_po'      => $gr->po_no,
-                'sph'       => $gr->kode_sph,
-                'penerima'   => $gr->last_updateby,
-                'total'      => $gr->total,
-                'terbilang'  => $gr->terbilang,
-                'file'       => $pofile,
-                'customer'  => $gr->nama_customer,
-            ];
+            try {
+                $pofile = "https://is3.cloudhost.id/bensinkustorage/$gr->po_file";
+                $validatedForMail = [
+                    'no_po'      => $gr->po_no,
+                    'sph'       => $gr->kode_sph,
+                    'penerima'   => $gr->last_updateby,
+                    'total'      => $gr->total,
+                    'terbilang'  => $gr->terbilang,
+                    'file'       => $pofile,
+                    'customer'  => $gr->nama_customer,
+                ];
 
-            $this->sendPoNotif($validatedForMail, $gr->po_file);
+                $this->sendPoNotif($validatedForMail, $gr->po_file);
+            } catch (\Exception $e) {
+                // Log error tapi tidak mengganggu proses update
+                Log::warning('Gagal mengirim email notification: ' . $e->getMessage());
+            }
 
             // Log aktivitas user
             UserSysLogHelper::logFromAuth($result, 'GoodReceipt', 'update');
@@ -229,11 +247,19 @@ public function update(Request $request, $po_id)
 private function sendPoNotif($validated, $fileUrl = null)
     {
         $workflow = DB::table('workflow_engine')->where('tipe_trx', 'email_po')->first();
-        if (!$workflow) throw new \Exception('Workflow tidak ditemukan');
+        if (!$workflow) {
+            Log::warning('Workflow email_po tidak ditemukan');
+            return false;
+        }
 
         $roleIds = [];
         if ($workflow->first_appr) $roleIds[] = $workflow->first_appr;
         if ($workflow->second_appr) $roleIds[] = $workflow->second_appr;
+
+        if (empty($roleIds)) {
+            Log::warning('Role IDs untuk email_po tidak ditemukan di workflow_engine');
+            return false;
+        }
 
         $users = DB::table('users as a')
             ->leftJoin('model_has_roles as b', 'b.model_id', '=', 'a.id')
@@ -242,7 +268,10 @@ private function sendPoNotif($validated, $fileUrl = null)
             ->groupBy('a.id', 'a.first_name', 'a.last_name', 'a.email')
             ->get();
 
-        if ($users->isEmpty()) throw new \Exception('User dengan role terkait tidak ditemukan');
+        if ($users->isEmpty()) {
+            Log::warning('User dengan role terkait tidak ditemukan untuk email notification');
+            return false;
+        }
 
         $recipients = [];
         foreach ($users as $user) {
@@ -266,6 +295,171 @@ private function sendPoNotif($validated, $fileUrl = null)
         ]);
 
         return ['message' => 'Notification job dispatched'];
+    }
+
+    /**
+     * Update sequence berdasarkan wilayah dengan logika IASE atau non-IASE
+     * 
+     * @param string $kodeSph Kode SPH dari good receipt
+     * @param string $wilayah Wilayah dari request (contoh: "01")
+     * @throws \Exception Jika terjadi error saat update sequence
+     */
+    private function updateSequenceByWilayah($kodeSph, $wilayah)
+    {
+        try {
+            $wilayahTrimmed = trim($wilayah);
+            $wilayahUpper = strtoupper($wilayahTrimmed);
+            
+            // Cek apakah ada value di master_lov yang mengandung "IASE" + wilayah (contoh: "IASE01")
+            $iaseValue = 'IASE' . $wilayahUpper;
+            $hasIaseValue = MasterLov::where('value', 'LIKE', '%' . $iaseValue . '%')
+                ->orWhere('value', 'LIKE', '%IASE%')
+                ->exists();
+            
+            // Atau cek langsung di code DO_IASE_SEQ apakah value-nya mengandung IASE + wilayah
+            $iaseSeq = MasterLov::where('code', 'DO_IASE_SEQ')->first();
+            $hasIaseLabel = false;
+            
+            if ($iaseSeq && !empty($iaseSeq->value)) {
+                // Cek apakah value mengandung IASE + wilayah (contoh: IASE01)
+                $hasIaseLabel = (stripos($iaseSeq->value, $iaseValue) !== false) || 
+                                (stripos($iaseSeq->value, 'IASE') !== false);
+            }
+            
+            $seqCode = '';
+            $currentValue = '';
+            $newValue = '';
+            $masterLov = null;
+            
+            if ($hasIaseLabel && $iaseSeq) {
+                // Kondisi a: Apabila value ada label IASE (contoh: IASE01)
+                // Pencarian dengan code = DO_IASE_SEQ
+                $seqCode = 'DO_IASE_SEQ';
+                $masterLov = $iaseSeq;
+                $currentValue = $masterLov->value;
+                
+                // Extract angka dari value (contoh: IASE01 -> 01, IASE02 -> 02)
+                // Increment angka tersebut
+                if (preg_match('/IASE(\d+)/i', $currentValue, $matches)) {
+                    $number = (int)$matches[1];
+                    $newNumber = $number + 1;
+                    // Format ulang dengan padding 2 digit (01, 02, dst)
+                    $newValue = 'IASE' . str_pad($newNumber, 2, '0', STR_PAD_LEFT);
+                } else {
+                    // Jika format tidak sesuai, mulai dari IASE01
+                    $newValue = 'IASE01';
+                }
+                
+            } else {
+                // Kondisi b: Apabila tidak ada label IASE (hanya "01")
+                // Pencarian dengan code = DO_{wilayah}_SEQ (contoh: DO_01_SEQ)
+                $seqCode = 'DO_' . $wilayahUpper . '_SEQ';
+                
+                $masterLov = MasterLov::where('code', $seqCode)->first();
+                
+                if (!$masterLov) {
+                    throw new \Exception("Master LOV dengan code '{$seqCode}' tidak ditemukan");
+                }
+                
+                $currentValue = $masterLov->value;
+                
+                // Increment value +1
+                if (is_numeric($currentValue)) {
+                    $newValue = (string)((int)$currentValue + 1);
+                } else {
+                    // Jika value bukan numeric, mulai dari 1
+                    $newValue = '1';
+                }
+            }
+            
+            // Update value di master_lov
+            $masterLov->value = $newValue;
+            $masterLov->save();
+            
+            Log::info('Sequence updated by wilayah', [
+                'kode_sph' => $kodeSph,
+                'wilayah' => $wilayah,
+                'has_iase_label' => $hasIaseLabel,
+                'seq_code' => $seqCode,
+                'old_value' => $currentValue,
+                'new_value' => $newValue
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error updating sequence by wilayah', [
+                'kode_sph' => $kodeSph,
+                'wilayah' => $wilayah,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            throw $e; // Re-throw exception agar bisa di-catch di try-catch utama
+        }
+    }
+
+    /**
+     * Update sequence berdasarkan source dan wilayah (function lama, tetap dipertahankan untuk backward compatibility)
+     * 
+     * @param string $kodeSph Kode SPH dari good receipt
+     * @param string $source Source dari request (penanda IASE atau bukan)
+     * @param string $wilayah Wilayah dari request
+     * @throws \Exception Jika terjadi error saat update sequence
+     */
+    private function updateSequence($kodeSph, $source, $wilayah)
+    {
+        try {
+            // Tentukan code sequence berdasarkan source
+            $seqCode = '';
+            $sourceUpper = strtoupper(trim($source));
+            $wilayahUpper = strtoupper(trim($wilayah));
+            
+            // Cek apakah source adalah "IASE"
+            if ($sourceUpper === 'IASE') {
+                $seqCode = 'DO_IASE_SEQ';
+            } else {
+                // Ambil 2 karakter pertama dari wilayah untuk non-IASE
+                $twoDigits = substr($wilayahUpper, 0, 2);
+                if (strlen($twoDigits) < 2) {
+                    throw new \Exception('Wilayah tidak valid: minimal 2 karakter diperlukan untuk non-IASE');
+                }
+                $seqCode = 'DO_' . $twoDigits . '_SEQ';
+            }
+
+            // Ambil value sequence saat ini dari master_lov
+            $masterLov = MasterLov::where('code', $seqCode)->first();
+            
+            if (!$masterLov) {
+                throw new \Exception("Master LOV dengan code '{$seqCode}' tidak ditemukan");
+            }
+
+            // Increment sequence value
+            $currentValue = $masterLov->value;
+            $newValue = (int)$currentValue + 1;
+            
+            // Update value (konversi kembali ke string)
+            $masterLov->value = (string)$newValue;
+            $masterLov->save();
+
+            Log::info('Sequence updated', [
+                'kode_sph' => $kodeSph,
+                'source' => $source,
+                'wilayah' => $wilayah,
+                'seq_code' => $seqCode,
+                'old_value' => $currentValue,
+                'new_value' => $newValue
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error updating sequence', [
+                'kode_sph' => $kodeSph,
+                'source' => $source,
+                'wilayah' => $wilayah,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            throw $e; // Re-throw exception agar bisa di-catch di try-catch utama
+        }
     }
 
 
@@ -341,6 +535,7 @@ public function revisi(Request $request, $id)
 
             $data = $request->validate([
                 'po_no'      => 'required|string|min:3',
+                'no_seq'     => 'nullable|string',
                 'sub_total'  => 'required|numeric',
                 'ppn'        => 'required|numeric',
                 'pbbkb'      => 'required|numeric',
@@ -370,6 +565,7 @@ public function revisi(Request $request, $id)
                     ]);
                 }
                 $gr->po_no     = $data['po_no'];
+                $gr->no_seq    = $data['no_seq'] ?? null;
                 $gr->sub_total = $data['sub_total'];
                 $gr->ppn       = $data['ppn'];
                 $gr->pbbkb     = $data['pbbkb'];
@@ -474,6 +670,239 @@ public function revisi(Request $request, $id)
                 'success' => false,
                 'message' => 'Gagal membatalkan PO: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * List SPH yang sudah approved (status = 4)
+     * Menampilkan kode_sph dari data_trx_sph yang sudah di-approve
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function sphApproved(Request $request)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        // Query data SPH dengan status = 4 (approved)
+        $sphApproved = DB::table('data_trx_sph')
+            ->where('status', 4)
+            ->select('id', 'kode_sph', 'comp_name', 'tipe_sph', 'product', 'total_price', 'created_at', 'updated_at')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Log aktivitas user
+        UserSysLogHelper::logFromAuth($result, 'GoodReceipt', 'sphApproved');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data SPH approved berhasil diambil',
+            'data' => $sphApproved,
+            'total' => $sphApproved->count()
+        ]);
+    }
+
+    /**
+     * Tambah PO baru dengan upload file PO
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function tambahPo(Request $request)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        $user = User::find($result['id']);
+        $fullName = "{$user->first_name} {$user->last_name}";
+
+        // Validasi payload
+        $data = $request->validate([
+            'sph_id'          => 'required|integer|exists:data_trx_sph,id',
+            'nama_perusahaan' => 'required|string',
+            'source'          => 'required|string',
+            'po_no_customer' => 'required|string|min:3',
+            'wilayah'        => 'required|string',
+            'no_seq'         => 'nullable|string',
+            'qty'            => 'nullable|numeric|min:0',
+            'hsd_solar'      => 'required|numeric|min:0',
+            'ongkos_angkut'  => 'required|numeric|min:0',
+            'subtotal'       => 'required|numeric|min:0',
+            'ppn'            => 'required|numeric|min:0',
+            'pbbkb'          => 'required|numeric|min:0',
+            'pph'            => 'required|numeric|min:0',
+            'transport'      => 'required|numeric|min:0',
+            'total'          => 'required|numeric|min:0',
+            'terbilang'      => 'required|string', // Terbilang dari payload
+            'bypass'         => 'nullable|integer|in:0,1', // Hanya menerima 0 atau 1
+            'file_po'        => 'required|file|mimes:pdf,doc,docx|max:1024', // PDF dan Word, maksimal 1MB
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Ambil data SPH
+            $sph = DataTrxSph::findOrFail($data['sph_id']);
+            
+            // Generate daily sequence
+            $today = now()->toDateString();
+            $nextSeq = GoodReceipt::whereDate('created_at', $today)->max('daily_seq');
+            $nextSeq = ($nextSeq ?? 0) + 1;
+
+            // Upload file PO (menggunakan logic yang sama dengan update)
+            $filePath = null;
+            if ($request->hasFile('file_po')) {
+                $filePath = $request->file('file_po')->store(
+                    'good_receipt',
+                    'idcloudhost'
+                );
+            }
+
+            // Buat Good Receipt baru
+            $gr = new GoodReceipt();
+            $gr->kode_sph = $sph->kode_sph;
+            $gr->daily_seq = $nextSeq;
+            $gr->nama_customer = $data['nama_perusahaan'];
+            $gr->po_no = $data['po_no_customer'];
+            $gr->no_seq = $data['no_seq'] ?? null;
+            $gr->sub_total = $data['subtotal'];
+            $gr->ppn = $data['ppn'];
+            $gr->pbbkb = $data['pbbkb'];
+            $gr->pph = $data['pph'];
+            $gr->transport = $data['transport']; // Simpan transport ke tabel good_receipt
+            $gr->bypass = isset($data['bypass']) ? (int)$data['bypass'] : 0; // Simpan bypass sebagai 0 atau 1 (default 0)
+            $gr->total = $data['total'];
+            $gr->terbilang = $data['terbilang']; // Gunakan terbilang dari payload
+            $gr->po_file = $filePath;
+            $gr->status = 0; // Status awal: waiting
+            $gr->created_by = $fullName;
+            $gr->last_updateby = $fullName;
+            $gr->revisi_count = 0;
+            $gr->save();
+
+            // Simpan hsd_solar dan ongkos_angkut ke detail_good_receipt sebagai 2 record terpisah
+            // Hanya insert jika nilainya > 0
+            // Gunakan qty yang sama untuk kedua detail items
+            $qty = !empty($data['qty']) && $data['qty'] > 0 ? (float)$data['qty'] : 1; // Default 1 jika qty tidak dikirim atau 0
+            
+            if (!empty($data['hsd_solar']) && $data['hsd_solar'] > 0) {
+                // per_item = nilai dari payload hsd_solar
+                // total_harga = hsd_solar * qty
+                $perItemHsdSolar = (float)$data['hsd_solar'];
+                $totalHargaHsdSolar = $perItemHsdSolar * $qty;
+                
+                DetailGoodReceipt::create([
+                    'gr_id'        => $gr->id,
+                    'nama_item'    => 'HSD Solar',
+                    'qty'          => $qty,
+                    'per_item'     => $perItemHsdSolar, // Gunakan hsd_solar dari payload
+                    'total_harga'  => $totalHargaHsdSolar, // hsd_solar * qty
+                ]);
+            }
+
+            if (!empty($data['ongkos_angkut']) && $data['ongkos_angkut'] > 0) {
+                // per_item = nilai dari payload ongkos_angkut
+                // total_harga = ongkos_angkut * qty
+                $perItemOngkosAngkut = (float)$data['ongkos_angkut'];
+                $totalHargaOngkosAngkut = $perItemOngkosAngkut * $qty;
+                
+                DetailGoodReceipt::create([
+                    'gr_id'        => $gr->id,
+                    'nama_item'    => 'Ongkos Angkut',
+                    'qty'          => $qty,
+                    'per_item'     => $perItemOngkosAngkut, // Gunakan ongkos_angkut dari payload
+                    'total_harga'  => $totalHargaOngkosAngkut, // ongkos_angkut * qty
+                ]);
+            }
+
+            // Update sequence berdasarkan wilayah dengan logika IASE atau non-IASE
+            if (!empty($data['wilayah'])) {
+                $this->updateSequenceByWilayah($gr->kode_sph, $data['wilayah']);
+            }
+
+            DB::commit();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'GoodReceipt', 'tambahPo');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'PO berhasil ditambahkan',
+                'data' => [
+                    'id' => $gr->id,
+                    'kode_sph' => $gr->kode_sph,
+                    'po_no' => $gr->po_no,
+                    'nama_customer' => $gr->nama_customer,
+                    'total' => $gr->total,
+                    'file_po' => $filePath ? 'https://is3.cloudhost.id/bensinkustorage/' . $filePath : null,
+                    'status' => $gr->status,
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error tambah PO: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambahkan PO',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Helper function untuk konversi angka ke terbilang
+     * 
+     * @param float $angka
+     * @return string
+     */
+    private function terbilang($angka)
+    {
+        $angka = abs($angka);
+        $bilangan = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh', 'sebelas'];
+        
+        if ($angka < 12) {
+            return $bilangan[$angka] . ' rupiah';
+        } elseif ($angka < 20) {
+            return $bilangan[$angka - 10] . ' belas rupiah';
+        } elseif ($angka < 100) {
+            $hasil = $bilangan[floor($angka / 10)] . ' puluh';
+            if ($angka % 10 > 0) {
+                $hasil .= ' ' . $bilangan[$angka % 10];
+            }
+            return $hasil . ' rupiah';
+        } elseif ($angka < 1000) {
+            $hasil = $bilangan[floor($angka / 100)] . ' ratus';
+            $sisa = $angka % 100;
+            if ($sisa > 0) {
+                $hasil .= ' ' . $this->terbilang($sisa);
+            }
+            return $hasil;
+        } elseif ($angka < 1000000) {
+            $hasil = $this->terbilang(floor($angka / 1000)) . ' ribu';
+            $sisa = $angka % 1000;
+            if ($sisa > 0) {
+                $hasil .= ' ' . $this->terbilang($sisa);
+            }
+            return $hasil;
+        } elseif ($angka < 1000000000) {
+            $hasil = $this->terbilang(floor($angka / 1000000)) . ' juta';
+            $sisa = $angka % 1000000;
+            if ($sisa > 0) {
+                $hasil .= ' ' . $this->terbilang($sisa);
+            }
+            return $hasil;
+        } else {
+            // Untuk angka sangat besar, gunakan format numerik
+            return number_format($angka, 0, ',', '.') . ' rupiah';
         }
     }
 

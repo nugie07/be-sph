@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\DeliveryNote;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 
@@ -105,11 +107,10 @@ public function destroy($id)
 public function dnSource()
     {
         $result = DB::select("
-            select a.dn_no,a.drs_no,a.drs_unique,a.po_number as customer_po,a.customer_name,a.po_date,a.request_date as arrival_date,
-            b.delivery_to,b.qty,b.description,a.transporter_name as transportir
-            from sph_db.delivery_request a
-            left join sph_db.purchase_order b ON b.drs_unique = a.drs_unique
-            where b.status = 4 and b.category = 2
+            select dn_no, customer_po, nama as customer_name, tgl_po as po_date, 
+            created_at as arrival_date, delivery_to, qty, description, vendor_name as transportir, alamat
+            from purchase_order
+            where status = 4 and category = 2
         ");
         return response()->json($result);
     }
@@ -120,8 +121,8 @@ public function uploadBast(Request $request)
         try {
             // Validasi input dari form
             $request->validate([
-                'bast_drs_unique' => 'required|string|exists:delivery_note,drs_unique',
-                'bast_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:1024', // max 1MB
+                'bast_id' => 'required|integer|exists:delivery_note,id',
+                'bast_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
                 'tgl_bongkar' => 'nullable|string',
                 'jam_mulai' => 'nullable|string',
                 'jam_akhir' => 'nullable|string',
@@ -130,26 +131,56 @@ public function uploadBast(Request $request)
                 'tinggi_sounding' => 'nullable|string',
                 'jenis_suhu' => 'nullable|string',
                 'volume_diterima' => 'nullable|string',
-                'bast_file'       => 'nullable|file|mimes:pdf|max:2048',
-                'bast_date'       => 'nullable|date',
+                'bast_date' => 'nullable|date',
             ]);
 
-            // Cari record berdasarkan drs_unique
-            $drs_unique = $request->input('bast_drs_unique');
-            $note = DeliveryNote::where('drs_unique', $drs_unique)->first();
-
-            if (!$note) {
-                DB::rollBack();
-                return response()->json(['success' => false, 'message' => 'Delivery Note tidak ditemukan.'], 404);
-            }
+            // Cari record berdasarkan id
+            $id = $request->input('bast_id');
+            $note = DeliveryNote::findOrFail($id);
 
             // Proses penyimpanan file
             if ($request->hasFile('bast_file')) {
-                $path = $request->file('bast_file')->store(
-                        'bast',
-                        'idcloudhost'
-                    );
-                $note->file = $path;
+                $file = $request->file('bast_file');
+                
+                // Generate unique filename
+                $originalName = $file->getClientOriginalName();
+                $safeName = str_replace('/', '_', $originalName);
+                $fileName = 'bast_' . $id . '_' . time() . '_' . $safeName;
+                $filePath = 'bast/' . $fileName;
+
+                // Check if storage disk exists
+                if (!Storage::disk('idcloudhost')) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Storage disk idcloudhost not configured'
+                    ], 500);
+                }
+
+                // Upload file to idcloudhost
+                $uploaded = Storage::disk('idcloudhost')->put($filePath, file_get_contents($file));
+
+                if (!$uploaded) {
+                    DB::rollBack();
+                    Log::error('Failed to upload BAST file', [
+                        'bast_id' => $id,
+                        'file_path' => $filePath
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Gagal upload file BAST ke storage'
+                    ], 500);
+                }
+
+                // Generate full public URL
+                $fullUrl = 'https://is3.cloudhost.id/bensinkustorage/' . $filePath;
+                $note->file = $fullUrl;
+
+                Log::info('BAST file uploaded successfully', [
+                    'bast_id' => $id,
+                    'file_path' => $filePath,
+                    'full_url' => $fullUrl
+                ]);
             }
 
             // Simpan data tambahan dari form BAST

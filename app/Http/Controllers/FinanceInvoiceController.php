@@ -44,7 +44,12 @@ public function index(Request $request)
 
             // Tambahkan dn_no di setiap item dan ubah id menjadi idd
             $invoices->map(function ($item) {
-                $item->dn_no = DB::table('delivery_note')->where('id', $item->bast_id)->value('dn_no');
+                // Gunakan dn_no dari tabel finance_invoice, fallback ke delivery_note jika kosong
+                if (empty($item->dn_no) && $item->bast_id) {
+                    $item->dn_no = DB::table('delivery_note')->where('id', $item->bast_id)->value('dn_no');
+                }
+                // Pastikan dn_no selalu ada di response (default null jika tidak ada)
+                $item->dn_no = $item->dn_no ?? null;
                 $item->dn_file = DB::table('delivery_note')->where('id', $item->bast_id)->value('file');
                 $item->po_file = \App\Models\GoodReceipt::where('po_no', $item->po_no)->value('po_file');
 
@@ -65,6 +70,8 @@ public function index(Request $request)
                 'total' => FinanceInvoice::count(),
                 'paid' => 'Rp ' . number_format(FinanceInvoice::where('status', 4)->where('payment_status', 1)->sum('total'), 0, ',', '.'),
                 'unpaid' => 'Rp ' . number_format(FinanceInvoice::where('status', 4)->where('payment_status', 0)->sum('total'), 0, ',', '.'),
+                'paid_invoices' => FinanceInvoice::where('status', 4)->where('payment_status', 1)->count(),
+                'unpaid_invoices' => FinanceInvoice::where('status', 4)->where('payment_status', 0)->count(),
             ];
 
             // Log aktivitas user
@@ -148,13 +155,14 @@ public function store(Request $request)
         }
         $fullName  = "{$user->first_name} {$user->last_name}";
         $validator = Validator::make($request->all(), [
-            'idd' => 'required|integer', // invoice_id dari payload
             'dn_no' => 'required|string|max:255',
             'po_no' => 'required|string|max:255',
             'invoice_no' => 'required|string|unique:finance_invoice,invoice_no',
             'invoice_date' => 'required|date',
             'bill_to' => 'required|string|max:255',
+            'bill_to_address' => 'nullable|string',
             'ship_to' => 'required|string|max:255',
+            'ship_to_address' => 'nullable|string',
             'payment_method' => 'required|string|max:255',
             'fob' => 'required|string|max:255',
             'sent_via' => 'required|string|max:255',
@@ -163,6 +171,8 @@ public function store(Request $request)
             'tax' => 'required|numeric|min:0',
             'pbbkb' => 'required|numeric|min:0',
             'pph23' => 'required|numeric|min:0',
+            'oat' => 'nullable|numeric|min:0',
+            'transport' => 'nullable|numeric|min:0',
             'grand_total' => 'required|numeric|min:0',
             'terbilang' => 'required|string|max:500',
             'details' => 'required|array|min:1',
@@ -186,62 +196,35 @@ public function store(Request $request)
             $tax = $request->tax;
             $pbbkb = $request->pbbkb;
             $pph23 = $request->pph23;
+            $oat = $request->oat ?? 0;
+            $transport = $request->transport ?? 0;
             $total = $request->grand_total;
             $terbilang = $request->terbilang;
 
-            // Cek apakah invoice dengan ID tersebut sudah ada
-            $existingInvoice = FinanceInvoice::find($request->idd);
-
-            if ($existingInvoice) {
-                // Update invoice yang sudah ada
-                $existingInvoice->update([
-                    'drs_no' => $request->dn_no,
-                    'po_no' => $request->po_no,
-                    'invoice_no' => $request->invoice_no,
-                    'invoice_date' => $request->invoice_date,
-                    'bill_to' => $request->bill_to,
-                    'ship_to' => $request->ship_to,
-                    'terms' => $request->payment_method,
-                    'fob' => $request->fob,
-                    'sent_via' => $request->sent_via,
-                    'sent_date' => $request->sent_date,
-                    'sub_total' => $subtotal,
-                    'ppn' => $tax,
-                    'pbbkb' => $pbbkb,
-                    'pph' => $pph23,
-                    'total' => $total,
-                    'terbilang' => $terbilang,
-                    'status' => 1,
-                ]);
-                $invoice = $existingInvoice;
-            } else {
-                // Buat invoice baru dengan ID yang diberikan
+            // Buat invoice baru
             $invoice = FinanceInvoice::create([
-                    'id' => $request->idd,
-                    'drs_no' => $request->dn_no,
+                'dn_no' => $request->dn_no,
                 'po_no' => $request->po_no,
                 'invoice_no' => $request->invoice_no,
                 'invoice_date' => $request->invoice_date,
                 'bill_to' => $request->bill_to,
-                    'ship_to' => $request->ship_to,
-                    'terms' => $request->payment_method,
-                    'fob' => $request->fob,
-                    'sent_via' => $request->sent_via,
-                    'sent_date' => $request->sent_date,
-                    'sub_total' => $subtotal,
-                    'ppn' => $tax,
-                    'pbbkb' => $pbbkb,
-                    'pph' => $pph23,
+                'bill_to_address' => $request->bill_to_address,
+                'ship_to' => $request->ship_to,
+                'ship_to_address' => $request->ship_to_address,
+                'terms' => $request->payment_method,
+                'fob' => $request->fob,
+                'sent_via' => $request->sent_via,
+                'sent_date' => $request->sent_date,
+                'sub_total' => $subtotal,
+                'ppn' => $tax,
+                'pbbkb' => $pbbkb,
+                'pph' => $pph23,
+                'oat' => $oat,
+                'transport' => $transport,
                 'total' => $total,
-                    'terbilang' => $terbilang,
-                    'status' => 1,
-                ]);
-            }
-
-                        // Hapus detail yang sudah ada (jika update)
-            if ($existingInvoice) {
-                $invoice->details()->delete();
-            }
+                'terbilang' => $terbilang,
+                'status' => 1,
+            ]);
 
             foreach ($request->details as $item) {
                 // Debug: Log data yang akan disimpan
@@ -250,21 +233,19 @@ public function store(Request $request)
                     'qty' => $item['qty'],
                     'harga' => $item['harga'],
                     'total' => $item['qty'] * $item['harga'],
-                    'invoice_id' => $request->idd // Gunakan ID dari payload
+                    'invoice_id' => $invoice->id // Gunakan ID dari invoice yang baru dibuat
                 ]);
 
-                $detailData = [
-                    'invoice_id' => $request->idd, // Gunakan ID dari payload
+                InvoiceDetail::create([
+                    'invoice_id' => $invoice->id, // Gunakan ID dari invoice yang baru dibuat
                     'nama_item' => $item['nama_item'],
                     'qty' => $item['qty'],
                     'harga' => $item['harga'],
                     'total' => $item['qty'] * $item['harga'],
-                ];
-
-
+                ]);
             }
-            InvoiceDetail::create($detailData);
-                $invoiceId = $request->idd;
+
+                $invoiceId = $invoice->id;
                 $invoiceNo = $request->invoice_no;
                 $timestamp = Carbon::now()->format('Y-m-d H:i:s');
                 WorkflowHelper::createWorkflowWithRemark(
@@ -393,11 +374,14 @@ public function store(Request $request)
                         'drs_unique' => $invoice->drs_unique,
                         'bast_id' => $invoice->bast_id,
                         'invoice_no' => $invoice->invoice_no,
+                        'dn_no' => $invoice->dn_no,
                         'invoice_date' => $invoice->invoice_date,
                         'terms' => $invoice->terms,
                         'po_no' => $invoice->po_no,
                         'bill_to' => $invoice->bill_to,
+                        'bill_to_address' => $invoice->bill_to_address,
                         'ship_to' => $invoice->ship_to,
+                        'ship_to_address' => $invoice->ship_to_address,
                         'fob' => $invoice->fob,
                         'sent_date' => $invoice->sent_date,
                         'sent_via' => $invoice->sent_via,
@@ -554,6 +538,7 @@ public function store(Request $request)
                     'drs_unique' => $invoice->drs_unique,
                     'bast_id' => $invoice->bast_id,
                     'invoice_no' => $invoice->invoice_no,
+                    'dn_no' => $invoice->dn_no,
                     'invoice_date' => $invoice->invoice_date ? Carbon::parse($invoice->invoice_date)->format('Y-m-d') : null,
                     'terms' => $invoice->terms,
                     'po_no' => $invoice->po_no,
@@ -765,6 +750,208 @@ public function store(Request $request)
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal upload bukti pembayaran: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get list Delivery Note berdasarkan customer_po
+     * Endpoint: GET /finance/dn-list-invoice
+     * Query: SELECT dn.id, dn.customer_po, dn.dn_no FROM delivery_note dn WHERE customer_po = '{customer_po}'
+     */
+    public function dnlistinvoice(Request $request)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        try {
+            // Validasi customer_po dari request
+            $request->validate([
+                'customer_po' => 'required|string'
+            ]);
+
+            $customerPo = $request->input('customer_po');
+
+            // Query: SELECT dn.id, dn.customer_po, dn.dn_no FROM delivery_note dn WHERE customer_po = '{customer_po}'
+            $data = DB::table('delivery_note as dn')
+                ->where('dn.customer_po', $customerPo)
+                ->select('dn.id', 'dn.customer_po', 'dn.dn_no')
+                ->get();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'FinanceInvoice', 'dnlistinvoice');
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+                'total' => $data->count()
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting DN list invoice', [
+                'customer_po' => $request->input('customer_po'),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get customer data berdasarkan name
+     * Endpoint: GET /finance/generate-cust-data
+     * Query: SELECT mc.id, mc.name, mc.bill_to, mc.ship_to, mc.address FROM master_customer mc WHERE mc.name = '{name}'
+     */
+    public function generateCustData(Request $request)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        try {
+            // Validasi name dari request
+            $request->validate([
+                'name' => 'required|string'
+            ]);
+
+            $customerName = $request->input('name');
+
+            // Query: SELECT mc.id, mc.name, mc.bill_to, mc.ship_to, mc.address FROM master_customer mc WHERE mc.name = '{name}'
+            $data = DB::table('master_customer as mc')
+                ->where('mc.name', $customerName)
+                ->select('mc.id', 'mc.name', 'mc.bill_to', 'mc.ship_to', 'mc.address')
+                ->first();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'FinanceInvoice', 'generateCustData');
+
+            if (!$data) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data customer tidak ditemukan'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $data
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting customer data', [
+                'name' => $request->input('name'),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate data PO Customer
+     * Alur:
+     * 1. Query good_receipt berdasarkan po_no untuk mendapatkan id, po_file, transport
+     * 2. Query detail_good_receipt berdasarkan gr_id (id dari point 1)
+     * Endpoint: GET /finance/generate-po-customer
+     */
+    public function generatePoCustomer(Request $request)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        try {
+            // Validasi po_no dari request
+            $request->validate([
+                'po_no' => 'required|string'
+            ]);
+
+            $poNo = $request->input('po_no');
+
+            // Step 1: Query good_receipt untuk mendapatkan id, po_file, transport
+            // Query: SELECT id, po_file, transport FROM good_receipt WHERE po_no = '{po_no}'
+            $goodReceipt = DB::table('good_receipt')
+                ->where('po_no', $poNo)
+                ->select('id', 'po_file', 'transport')
+                ->first();
+
+            if (!$goodReceipt) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Good Receipt tidak ditemukan dengan PO: ' . $poNo
+                ], 404);
+            }
+
+            $grId = $goodReceipt->id;
+
+            // Step 2: Query detail_good_receipt berdasarkan gr_id
+            // Query: SELECT id, gr_id, nama_item, qty, per_item, total_harga FROM detail_good_receipt WHERE gr_id = {gr_id}
+            $details = DB::table('detail_good_receipt')
+                ->where('gr_id', $grId)
+                ->select('id', 'gr_id', 'nama_item', 'qty', 'per_item', 'total_harga')
+                ->get();
+
+            // Log aktivitas user
+            UserSysLogHelper::logFromAuth($result, 'FinanceInvoice', 'generatePoCustomer');
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'good_receipt' => [
+                        'id' => $goodReceipt->id,
+                        'po_file' => $goodReceipt->po_file,
+                        'transport' => $goodReceipt->transport
+                    ],
+                    'details' => $details
+                ]
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Error generating PO customer data', [
+                'po_no' => $request->input('po_no'),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data: ' . $e->getMessage()
             ], 500);
         }
     }

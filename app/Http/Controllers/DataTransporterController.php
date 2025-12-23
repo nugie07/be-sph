@@ -21,6 +21,11 @@ class DataTransporterController extends Controller
             $query->where('category', 2);
         }
 
+        // Filter tipe (optional, case-insensitive)
+        if ($request->has('tipe') && !empty($request->tipe)) {
+            $query->whereRaw('LOWER(tipe) = ?', [strtolower(trim($request->tipe))]);
+        }
+
         $data = $query->orderBy('nama')->get();
         return response()->json(['data' => $data]);
     }
