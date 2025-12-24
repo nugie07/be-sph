@@ -31,9 +31,12 @@ class FinanceInvoice extends Model
         'ppn',
         'pbbkb',
         'pph',
+        'oat',
+        'transport',
         'total',
         'terbilang',
         'status',
+        'type',
         'created_by',
     ];
     public function details()

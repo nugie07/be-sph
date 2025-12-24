@@ -188,8 +188,8 @@
             <table>
                 <tr>
                     <td width="10%">
-                        <div style="text-align: center; font-size: 24px; font-weight: bold; margin-bottom: 16px;">
-                            INVOICE
+                    <div style="text-align: center; font-size: 24px; font-weight: bold; margin-bottom: 16px;">
+                            {!! $invoice->type == 1 ? 'INVOICE' : 'PROFORMA <br> INVOICE' !!}
                         </div>
 
                     </td>
@@ -267,29 +267,35 @@
 
         <!-- Table Item -->
         <table class="table" style="width: 100%; font-size: 11px; border-collapse: collapse; table-layout: fixed;">
-            <thead>
-                <tr style="background-color: #f3f3f3; text-transform: uppercase;">
-                    <th class="amount-column" style="width: 12%;">KODE BARANG</th>
-                    <th class="amount-column" style="width: 40%;">DESCRIPTION</th>
-                    <th class="amount-column" style="width: 10%;">QUANTITY</th>
-                    <th class="amount-column" style="width: 13%;">UNIT PRICE</th>
-                    <th class="amount-column" style="width: 10%;">DISKON</th>
-                    <th class="amount-column" style="width: 15%;">AMOUNT</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($details as $index => $detail)
-                <tr>
-                    <td class="amount-column">{{ $detail->kode_barang ?? 'N/A' }}</td>
-                    <td class="amount-column">{{ $detail->nama_item ?? 'N/A' }}</td>
-                    <td class="amount-column">{{ number_format($detail->qty ?? 0, 0, ',', '.') }}</td>
-                    <td class="amount-column">Rp {{ number_format($detail->harga ?? 0, 0, ',', '.') }}</td>
-                    <td class="amount-column">Rp {{ number_format($detail->diskon ?? 0, 0, ',', '.') }}</td>
-                    <td class="amount-column">Rp {{ number_format($detail->total ?? 0, 0, ',', '.') }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
+                <thead>
+                    <tr style="background-color: #f3f3f3; text-transform: uppercase;">
+                        <th class="amount-column" colspan="2" style="width: 15%;">QUANTITY</th>
+                        
+                        <th class="amount-column" style="width: 40%;">DESCRIPTION</th>
+                        <th class="amount-column" style="width: 15%;">UNIT PRICE</th>
+                        <th class="amount-column" style="width: 10%;">DISKON</th>
+                        <th class="amount-column" style="width: 20%;">AMOUNT</th>
+                    </tr>
+                </thead>
+                <tbody>
+            @foreach($details as $index => $detail)
+            <tr>
+                <td class="amount-column" style="text-align: center;">
+                    {{ number_format($detail->qty ?? 0, 0, ',', '.') }}
+                </td>
+
+                <td class="amount-column" style="text-align: center;">
+                    Liter
+                </td>
+
+                <td class="amount-column" style="text-align: center;">{{ $detail->nama_item ?? 'N/A' }}</td>
+                <td class="amount-column" style="text-align: right;"><span style="float: left;">Rp</span> {{ number_format($detail->harga ?? 0, 0, ',', '.') }}</td>
+                <td class="amount-column" style="text-align: right;"><span style="float: left;">Rp</span> {{ number_format($detail->diskon ?? 0, 0, ',', '.') }}</td>
+                <td class="amount-column" style="text-align: right;"><span style="float: left;">Rp</span> {{ number_format($detail->total ?? 0, 0, ',', '.') }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
 
         <!-- REKENING PEMBAYARAN + TABEL TOTAL -->
         <table style="width: 100%; font-size: 11px; margin-bottom: 20px;">
@@ -369,9 +375,31 @@
                 </td>
             </tr>
         </table>
+          <!-- TERBILANG & KETERANGAN -->
+          <table style="width: 100%; font-size: 11px; margin-bottom: 30px;">
+            <tr>
+                <td colspan="3" style="text-align: center;">
+                    <strong>TERBILANG</strong>: {{ $invoice->terbilang ?? 'N/A' }}
+                </td>
+            </tr>
+        </table>
+        <table style="width: auto; max-width: 60%; font-size: 11px; margin-bottom: 30px; border: 1px solid #000;">
+            <tr>
+                <td style="background-color: #d3d3d3; padding: 8px; text-align: center; font-weight: bold; border-bottom: 1px solid #000;">
+                    NOTE
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; text-align: center;">
+                    Bukti pembayaran harap<br>
+                    dikirimkan ke email :<br>
+                    <strong>FINANCE@MINAMARRETENERGI.COM</strong>
+                </td>
+            </tr>
+        </table>
 
         <!-- TERBILANG & KETERANGAN -->
-        <table style="width: 100%; font-size: 11px; margin-bottom: 30px;">
+        <!-- <table style="width: 100%; font-size: 11px; margin-bottom: 30px;">
             <tr>
                 <td style="width: 15%;">Terbilang</td>
                 <td style="width: 2%;">:</td>
@@ -383,7 +411,7 @@
                 <td>BUKTI PEMBAYARAN HARAP DIKIRIMKAN KE EMAIL: <strong>FINANCE@MINAMARRETENERGI.COM</strong>,
                     SERTA MENCANTUMKAN NOMOR PO SEBAGAI BUKTI PEMBAYARAN YANG SAH.</td>
             </tr>
-        </table>
+        </table> -->
 
         <!-- TANDA TANGAN -->
         <div style="width: 100%; text-align: right; margin-top: 50px;">
@@ -391,8 +419,8 @@
                 <p style="font-weight: bold; margin-bottom: 60px;">PT MINA MARRET TRANS ENERGI INDONESIA</p>
 
                 <p style="border-bottom: 2px solid black; display: inline-block; padding: 0 20px; font-weight: bold;">
-                    MINASARI MINGNA</p>
-                <p style="font-size: 11px; margin-top: 4px;">DIREKTUR</p>
+                KAYLEEN P. SURYA</p>
+                <p style="font-size: 11px; margin-top: 4px;">MANAJER KEUANGAN</p>
             </div>
         </div>
 </body>

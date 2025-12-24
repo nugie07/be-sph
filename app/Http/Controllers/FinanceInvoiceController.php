@@ -29,14 +29,21 @@ public function index(Request $request)
         
         $status = $request->get('status');
         $category = $request->get('category');
+        $type = $request->get('type');
 
             $query = FinanceInvoice::query();
 
-            if ($status) {
-                $query->where('status', $status);
+            // Convert status parameter dari FE menjadi filter payment_status
+            // status=1 = sudah dibayar (payment_status=1), status=0 = belum dibayar (payment_status=0)
+            if ($status !== null && $status !== '') {
+                $query->where('payment_status', $status);
             }
             if ($category) {
                 $query->where('category', $category);
+            }
+            if ($type) {
+                // Filter by type: 1 = Invoice, 2 = Proforma
+                $query->where('type', $type);
             }
 
             // Ambil semua invoices dulu
@@ -155,30 +162,31 @@ public function store(Request $request)
         }
         $fullName  = "{$user->first_name} {$user->last_name}";
         $validator = Validator::make($request->all(), [
-            'dn_no' => 'required|string|max:255',
-            'po_no' => 'required|string|max:255',
+            'dn_no' => 'nullable|string|max:255',
+            'po_no' => 'nullable|string|max:255',
             'invoice_no' => 'required|string|unique:finance_invoice,invoice_no',
-            'invoice_date' => 'required|date',
-            'bill_to' => 'required|string|max:255',
+            'invoice_date' => 'nullable|date',
+            'bill_to' => 'nullable|string|max:255',
             'bill_to_address' => 'nullable|string',
-            'ship_to' => 'required|string|max:255',
+            'ship_to' => 'nullable|string|max:255',
             'ship_to_address' => 'nullable|string',
-            'payment_method' => 'required|string|max:255',
-            'fob' => 'required|string|max:255',
-            'sent_via' => 'required|string|max:255',
-            'sent_date' => 'required|date',
-            'subtotal' => 'required|numeric|min:0',
-            'tax' => 'required|numeric|min:0',
-            'pbbkb' => 'required|numeric|min:0',
-            'pph23' => 'required|numeric|min:0',
+            'payment_method' => 'nullable|string|max:255',
+            'fob' => 'nullable|string|max:255',
+            'sent_via' => 'nullable|string|max:255',
+            'sent_date' => 'nullable|date',
+            'subtotal' => 'nullable|numeric|min:0',
+            'tax' => 'nullable|numeric|min:0',
+            'pbbkb' => 'nullable|numeric|min:0',
+            'pph23' => 'nullable|numeric|min:0',
             'oat' => 'nullable|numeric|min:0',
             'transport' => 'nullable|numeric|min:0',
-            'grand_total' => 'required|numeric|min:0',
-            'terbilang' => 'required|string|max:500',
-            'details' => 'required|array|min:1',
-            'details.*.nama_item' => 'required|string',
-            'details.*.qty' => 'required|numeric|min:1',
-            'details.*.harga' => 'required|numeric|min:0',
+            'grand_total' => 'nullable|numeric|min:0',
+            'terbilang' => 'nullable|string|max:500',
+            'type' => 'required|integer|in:1,2',
+            'details' => 'nullable|array|min:1',
+            'details.*.nama_item' => 'nullable|string',
+            'details.*.qty' => 'nullable|numeric|min:1',
+            'details.*.harga' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -224,25 +232,29 @@ public function store(Request $request)
                 'total' => $total,
                 'terbilang' => $terbilang,
                 'status' => 1,
+                'type' => $request->type,
+                'created_by' => $result['id'],
             ]);
 
-            foreach ($request->details as $item) {
-                // Debug: Log data yang akan disimpan
-                Log::info('Creating invoice detail:', [
-                    'nama_item' => $item['nama_item'],
-                    'qty' => $item['qty'],
-                    'harga' => $item['harga'],
-                    'total' => $item['qty'] * $item['harga'],
-                    'invoice_id' => $invoice->id // Gunakan ID dari invoice yang baru dibuat
-                ]);
+            if ($request->details && is_array($request->details)) {
+                foreach ($request->details as $item) {
+                    // Debug: Log data yang akan disimpan
+                    Log::info('Creating invoice detail:', [
+                        'nama_item' => $item['nama_item'] ?? null,
+                        'qty' => $item['qty'] ?? null,
+                        'harga' => $item['harga'] ?? null,
+                        'total' => ($item['qty'] ?? 0) * ($item['harga'] ?? 0),
+                        'invoice_id' => $invoice->id // Gunakan ID dari invoice yang baru dibuat
+                    ]);
 
-                InvoiceDetail::create([
-                    'invoice_id' => $invoice->id, // Gunakan ID dari invoice yang baru dibuat
-                    'nama_item' => $item['nama_item'],
-                    'qty' => $item['qty'],
-                    'harga' => $item['harga'],
-                    'total' => $item['qty'] * $item['harga'],
-                ]);
+                    InvoiceDetail::create([
+                        'invoice_id' => $invoice->id, // Gunakan ID dari invoice yang baru dibuat
+                        'nama_item' => $item['nama_item'] ?? null,
+                        'qty' => $item['qty'] ?? null,
+                        'harga' => $item['harga'] ?? null,
+                        'total' => ($item['qty'] ?? 0) * ($item['harga'] ?? 0),
+                    ]);
+                }
             }
 
                 $invoiceId = $invoice->id;

@@ -505,7 +505,8 @@ public function verifyInvoice(Request $request, $trx_id)
                 'oat' => $invoice->oat ?? 0,
                 'transport' => $invoice->transport ?? 0,
                 'total' => $invoice->total ?? 0,
-                'terbilang' => $invoice->terbilang ?? '-'
+                'terbilang' => $invoice->terbilang ?? '-',
+                'type' => $invoice->type ?? null
             ];
 
             Log::info('Invoice data prepared', [

@@ -189,7 +189,7 @@
                 <tr>
                     <td width="10%">
                         <div style="text-align: center; font-size: 24px; font-weight: bold; margin-bottom: 16px;">
-                            INVOICE
+                            {!! $invoice->type == 1 ? 'INVOICE' : 'PROFORMA <br> INVOICE' !!}
                         </div>
 
                     </td>
@@ -268,35 +268,35 @@
 
         <!-- Table Item -->
         <table class="table" style="width: 100%; font-size: 11px; border-collapse: collapse; table-layout: fixed;">
-    <thead>
-        <tr style="background-color: #f3f3f3; text-transform: uppercase;">
-            <th class="amount-column" colspan="2" style="width: 15%;">QUANTITY</th>
-            
-            <th class="amount-column" style="width: 40%;">DESCRIPTION</th>
-            <th class="amount-column" style="width: 15%;">UNIT PRICE</th>
-            <th class="amount-column" style="width: 10%;">DISKON</th>
-            <th class="amount-column" style="width: 20%;">AMOUNT</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach($details as $index => $detail)
-        <tr>
-            <td class="amount-column" style="text-align: center;">
-                {{ number_format($detail->qty ?? 0, 0, ',', '.') }}
-            </td>
+                <thead>
+                    <tr style="background-color: #f3f3f3; text-transform: uppercase;">
+                        <th class="amount-column" colspan="2" style="width: 15%;">QUANTITY</th>
+                        
+                        <th class="amount-column" style="width: 40%;">DESCRIPTION</th>
+                        <th class="amount-column" style="width: 15%;">UNIT PRICE</th>
+                        <th class="amount-column" style="width: 10%;">DISKON</th>
+                        <th class="amount-column" style="width: 20%;">AMOUNT</th>
+                    </tr>
+                </thead>
+                <tbody>
+            @foreach($details as $index => $detail)
+            <tr>
+                <td class="amount-column" style="text-align: center;">
+                    {{ number_format($detail->qty ?? 0, 0, ',', '.') }}
+                </td>
 
-            <td class="amount-column" style="text-align: center;">
-                Liter
-            </td>
+                <td class="amount-column" style="text-align: center;">
+                    Liter
+                </td>
 
-            <td class="amount-column" style="text-align: center;">{{ $detail->nama_item ?? 'N/A' }}</td>
-            <td class="amount-column" style="text-align: right;"><span style="float: left;">Rp</span> {{ number_format($detail->harga ?? 0, 0, ',', '.') }}</td>
-            <td class="amount-column" style="text-align: right;"><span style="float: left;">Rp</span> {{ number_format($detail->diskon ?? 0, 0, ',', '.') }}</td>
-            <td class="amount-column" style="text-align: right;"><span style="float: left;">Rp</span> {{ number_format($detail->total ?? 0, 0, ',', '.') }}</td>
-        </tr>
-        @endforeach
-    </tbody>
-</table>
+                <td class="amount-column" style="text-align: center;">{{ $detail->nama_item ?? 'N/A' }}</td>
+                <td class="amount-column" style="text-align: right;"><span style="float: left;">Rp</span> {{ number_format($detail->harga ?? 0, 0, ',', '.') }}</td>
+                <td class="amount-column" style="text-align: right;"><span style="float: left;">Rp</span> {{ number_format($detail->diskon ?? 0, 0, ',', '.') }}</td>
+                <td class="amount-column" style="text-align: right;"><span style="float: left;">Rp</span> {{ number_format($detail->total ?? 0, 0, ',', '.') }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
 
         <!-- REKENING PEMBAYARAN + TABEL TOTAL -->
         <table style="width: 100%; font-size: 11px; margin-bottom: 20px;">
