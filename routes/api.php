@@ -18,7 +18,29 @@ use App\Http\Controllers\SupplierTransporterController;
 use App\Http\Controllers\CustomerDatabaseController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\MasterWilayahController;
+use Illuminate\Support\Facades\DB;
 
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'app' => config('app.name'),
+        'time' => now(),
+    ]);
+});
+
+Route::get('/db-check', function () {
+    try {
+        DB::connection()->getPdo();
+        return response()->json([
+            'db' => 'connected',
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'db' => 'error',
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+});
 
 // Logging
 Route::post('/system-logs', [SystemLogController::class, 'store']);
