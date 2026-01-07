@@ -25,7 +25,22 @@ public function login(Request $request)
         $clientSecret = $request->header('X-Client-Secret');
         $expectedSecret = config('app.client_secret');
 
+        // Log untuk debugging
+        Log::info('Login attempt', [
+            'email' => $request->email,
+            'has_client_secret' => !empty($clientSecret),
+            'client_secret_match' => $clientSecret === $expectedSecret,
+            'expected_secret_set' => !empty($expectedSecret),
+            'url' => $request->fullUrl(),
+            'method' => $request->method()
+        ]);
+
         if (!$clientSecret || $clientSecret !== $expectedSecret) {
+            Log::warning('Login failed: Invalid client secret', [
+                'email' => $request->email,
+                'provided_secret' => $clientSecret ? 'provided' : 'missing',
+                'expected_secret' => $expectedSecret ? 'set' : 'not_set'
+            ]);
             return response()->json([
                 'message' => 'Unauthorized. Invalid client secret.'
             ], 403);
@@ -37,7 +52,23 @@ public function login(Request $request)
             'password' => 'required',
         ]);
 
+        // Cek apakah user exists
+        $user = User::where('email', $request->email)->whereNull('deleted_at')->first();
+        
+        if (!$user) {
+            Log::warning('Login failed: User not found', [
+                'email' => $request->email
+            ]);
+            return response()->json([
+                'message' => 'Invalid login details'
+            ], 401);
+        }
+
         if (!Auth::attempt($request->only('email', 'password'))) {
+            Log::warning('Login failed: Invalid password', [
+                'email' => $request->email,
+                'user_id' => $user->id
+            ]);
             return response()->json([
                 'message' => 'Invalid login details'
             ], 401);

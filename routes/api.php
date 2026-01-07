@@ -18,6 +18,7 @@ use App\Http\Controllers\SupplierTransporterController;
 use App\Http\Controllers\CustomerDatabaseController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\MasterWilayahController;
+use App\Http\Controllers\ManualController;
 use Illuminate\Support\Facades\DB;
 
 Route::get('/health', function () {
@@ -215,6 +216,19 @@ Route::post('/master-wilayah', [MasterWilayahController::class, 'createWilayah']
 Route::put('/master-wilayah/{id}', [MasterWilayahController::class, 'updateWilayah']);
 Route::delete('/master-wilayah/{id}', [MasterWilayahController::class, 'deleteWilayah']);
 Route::get('/master-wilayah/request', [MasterWilayahController::class, 'wilayahRequest']);
+
+// Manual Management
+Route::get('/manual', [ManualController::class, 'index']);
+Route::get('/manual/{id}', [ManualController::class, 'show']);
+Route::post('/manual', [ManualController::class, 'store']);
+Route::put('/manual/{id}', [ManualController::class, 'update']);
+Route::delete('/manual/{id}', [ManualController::class, 'destroy']);
+
+// Manual Details Management
+Route::get('/manual-details/{id}', [ManualController::class, 'showDetail']);
+Route::post('/manual-details', [ManualController::class, 'storeDetail']);
+Route::put('/manual-details/{id}', [ManualController::class, 'updateDetail']);
+Route::delete('/manual-details/{id}', [ManualController::class, 'destroyDetail']);
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
