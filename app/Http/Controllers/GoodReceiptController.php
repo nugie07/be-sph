@@ -728,6 +728,7 @@ public function revisi(Request $request, $id)
             'source'          => 'required|string',
             'po_no_customer' => 'required|string|min:3',
             'wilayah'        => 'required|string',
+            'req_date'       => 'required|date',
             'no_seq'         => 'nullable|string',
             'qty'            => 'nullable|numeric|min:0',
             'hsd_solar'      => 'required|numeric|min:0',
@@ -769,6 +770,8 @@ public function revisi(Request $request, $id)
             $gr->daily_seq = $nextSeq;
             $gr->nama_customer = $data['nama_perusahaan'];
             $gr->po_no = $data['po_no_customer'];
+            $gr->wilayah = $data['wilayah'];
+            $gr->req_date = $data['req_date'];
             $gr->no_seq = $data['no_seq'] ?? null;
             $gr->sub_total = $data['subtotal'];
             $gr->ppn = $data['ppn'];

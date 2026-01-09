@@ -157,41 +157,55 @@ public function logout(Request $request)
             $endDate = $request->get('end_date');
             $poNumber = $request->get('po_number');
 
-            // Build query
+            // Build query with subquery for detail_good_receipt
+            $dgrSubquery = DB::table('detail_good_receipt')
+                ->select('gr_id', DB::raw('SUM(qty) as total_qty'))
+                ->groupBy('gr_id');
+
             $query = DB::table('good_receipt as gr')
-                ->leftJoin('delivery_request as drs', 'drs.po_number', '=', 'gr.po_no')
-                ->leftJoin('purchase_order as po', 'po.drs_unique', '=', 'drs.drs_unique')
-                ->leftJoin('delivery_note as dn', 'dn.drs_unique', '=', 'drs.drs_unique')
+                ->leftJoinSub($dgrSubquery, 'dgr', function($join) {
+                    $join->on('dgr.gr_id', '=', 'gr.id');
+                })
+                ->leftJoin('master_wilayah as mw', 'mw.id', '=', 'gr.wilayah')
+                ->leftJoin('delivery_note as dn', 'dn.dn_no', '=', 'gr.no_seq')
+                ->leftJoin('purchase_order as po', function($join) {
+                    $join->on('po.dn_no', '=', 'gr.no_seq')
+                         ->where('po.category', '=', 2);
+                })
+                ->leftJoin('data_supplier_transporter as dst', 'dst.nama', '=', 'po.vendor_name')
                 ->select([
-                    'gr.status',
-                    'gr.nama_customer',
-                    'gr.po_no',
-                    'gr.created_at',
-                    'drs.volume',
-                    'drs.request_date',
-                    'drs.wilayah',
-                    'drs.dn_no',
-                    'dn.tgl_bongkar',
-                    'dn.arrival_date',
-                    'dn.bast_date',
-                    'dn.file',
-                    'drs.transporter_name',
-                    'dn.qty',
-                    'dn.dn_no',
-                    'dn.driver_name',
-                    'dn.nopol',
+                    DB::raw('ANY_VALUE(gr.nama_customer) as nama_customer'),
+                    DB::raw('ANY_VALUE(gr.po_no) as po_no'),
+                    DB::raw('ANY_VALUE(gr.created_at) as created_at'),
+                    DB::raw('COALESCE(dgr.total_qty, 0) as qty'),
+                    DB::raw('ANY_VALUE(gr.req_date) as req_date'),
+                    DB::raw('ANY_VALUE(mw.nama) as nama'),
+                    DB::raw('ANY_VALUE(dn.so) as so'),
+                    DB::raw('ANY_VALUE(po.vendor_po) as vendor_po'),
+                    DB::raw('ANY_VALUE(po.vendor_name) as vendor_name'),
+                    DB::raw('ANY_VALUE(dst.alias) as alias'),
+                    DB::raw('ANY_VALUE(po.qty) as po_qty'),
+                    DB::raw('ANY_VALUE(dn.tgl_bongkar) as tgl_bongkar'),
+                    DB::raw('ANY_VALUE(dn.arrival_date) as arrival_date'),
+                    DB::raw('ANY_VALUE(dn.bast_date) as bast_date'),
+                    DB::raw('ANY_VALUE(dn.file) as file'),
+                    DB::raw('ANY_VALUE(dn.driver_name) as driver_name'),
+                    DB::raw('ANY_VALUE(dn.nopol) as nopol'),
                     DB::raw("
-                        CASE
-                            WHEN dn.arrival_date IS NULL THEN 'On Progress'
-                            WHEN dn.arrival_date = drs.request_date THEN 'Ontime'
-                            WHEN dn.arrival_date < drs.request_date THEN 'Lebih Awal'
-                            WHEN dn.arrival_date > drs.request_date THEN
-                                CONCAT('Telat (', DATEDIFF(dn.arrival_date, drs.request_date), ' hari)')
-                            ELSE NULL
-                        END AS delivery_ket
-                    ")
+                        ANY_VALUE(
+                            CASE
+                                WHEN dn.arrival_date IS NULL THEN 'On Progress'
+                                WHEN dn.arrival_date = gr.req_date THEN 'Ontime'
+                                WHEN dn.arrival_date < gr.req_date THEN 'Lebih Awal'
+                                WHEN dn.arrival_date > gr.req_date THEN
+                                    CONCAT('Telat (', DATEDIFF(dn.arrival_date, gr.req_date), ' hari)')
+                                ELSE NULL
+                            END
+                        ) AS delivery_ket
+                    "),
+                    'gr.id'
                 ])
-                ->where('po.category', 2);
+                ->groupBy('gr.id');
 
             // Apply filters
             if ($startDate && $endDate) {
@@ -208,21 +222,21 @@ public function logout(Request $request)
             // Format dates
             $formattedData = $data->map(function ($item) {
                 return [
-                    'status' => $item->status,
                     'nama_customer' => $item->nama_customer,
                     'po_no' => $item->po_no,
                     'created_at' => $item->created_at ? \Carbon\Carbon::parse($item->created_at)->format('Y-m-d H:i') : null,
-                    'volume' => $item->volume,
-                    'request_date' => $item->request_date ? \Carbon\Carbon::parse($item->request_date)->format('Y-m-d') : null,
-                    'wilayah' => $item->wilayah,
-                    'drs_dn_no' => $item->dn_no, // dari delivery_request
+                    'qty' => $item->qty,
+                    'req_date' => $item->req_date ? \Carbon\Carbon::parse($item->req_date)->format('Y-m-d') : null,
+                    'nama' => $item->nama,
+                    'so' => $item->so,
+                    'vendor_po' => $item->vendor_po,
+                    'vendor_name' => $item->vendor_name,
+                    'alias' => $item->alias,
+                    'po_qty' => $item->po_qty,
                     'tgl_bongkar' => $item->tgl_bongkar ? \Carbon\Carbon::parse($item->tgl_bongkar)->format('Y-m-d') : null,
                     'arrival_date' => $item->arrival_date ? \Carbon\Carbon::parse($item->arrival_date)->format('Y-m-d') : null,
                     'bast_date' => $item->bast_date ? \Carbon\Carbon::parse($item->bast_date)->format('Y-m-d') : null,
                     'file' => $item->file,
-                    'transporter_name' => $item->transporter_name,
-                    'qty' => $item->qty,
-                    'dn_no' => $item->dn_no, // dari delivery_note
                     'driver_name' => $item->driver_name,
                     'nopol' => $item->nopol,
                     'delivery_ket' => $item->delivery_ket
