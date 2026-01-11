@@ -131,4 +131,15 @@ return [
     | authenticity of requests made to the API.
     |*/ 
     'client_secret' => env('CLIENT_SECRET', 'default_secret'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | This URL is used for generating frontend links in emails and notifications.
+    | Set this in your ".env" file as FE_URL.
+    |
+    */
+    'fe_url' => env('FE_URL', 'https://app.example.com'),
 ];

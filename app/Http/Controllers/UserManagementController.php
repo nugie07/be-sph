@@ -30,7 +30,20 @@ class UserManagementController extends Controller
             $perPage = (int) $request->get('per_page', 10);
             $search = $request->get('search', '');
 
-            // Base query
+            // Base query untuk count (tanpa GROUP BY)
+            $countQuery = DB::table('users as u')
+                ->where('u.status', 1)
+                ->whereNull('u.deleted_at');
+
+            // Search filter untuk count
+            if (!empty($search)) {
+                $countQuery->where(DB::raw("CONCAT(u.first_name, ' ', u.last_name)"), 'LIKE', '%' . $search . '%');
+            }
+
+            // Hitung total records
+            $totalCount = $countQuery->count();
+
+            // Base query dengan GROUP_CONCAT untuk roles
             $query = DB::table('users as u')
                 ->leftJoin('model_has_roles as mhr', 'mhr.model_id', '=', 'u.id')
                 ->leftJoin('roles as r', 'r.id', '=', 'mhr.role_id')
@@ -38,7 +51,7 @@ class UserManagementController extends Controller
                     'u.id',
                     'u.first_name',
                     'u.last_name',
-                    'r.name as rolename',
+                    DB::raw("GROUP_CONCAT(r.name SEPARATOR ', ') as rolename"),
                     'u.email',
                     'u.status',
                     'u.created_at',
@@ -47,15 +60,13 @@ class UserManagementController extends Controller
                     DB::raw("CONCAT(u.first_name, ' ', u.last_name) as full_name")
                 ])
                 ->where('u.status', 1)
-                ->whereNull('u.deleted_at');
+                ->whereNull('u.deleted_at')
+                ->groupBy('u.id');
 
             // Search filter - gabungan first_name dan last_name
             if (!empty($search)) {
                 $query->where(DB::raw("CONCAT(u.first_name, ' ', u.last_name)"), 'LIKE', '%' . $search . '%');
             }
-
-            // Hitung total records
-            $totalCount = $query->count();
 
             // Ambil data dengan pagination
             $users = $query->orderBy('u.first_name', 'asc')
@@ -203,7 +214,8 @@ class UserManagementController extends Controller
                     'fullname' => $user->first_name . ' ' . $user->last_name,
                     'email' => $user->email,
                     'username' => $user->email, // Username sama dengan email
-                    'password' => $request->password // Password asli sebelum di-hash
+                    'password' => $request->password, // Password asli sebelum di-hash
+                    'role' => $role->name // Nama role yang di-assign
                 ];
 
                 Mail::to($user->email)->send(new \App\Mail\NewUserMail($emailData));

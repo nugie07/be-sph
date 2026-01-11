@@ -38,7 +38,7 @@
         <div style="margin-top:20px;color:#888;">
             <strong>Need help?</strong>
             <br>
-            If you have any questions, please contact us by email at {{ env('MAIL_SUPPORT_EMAIL') ?? 'support@email.com' }}.
+            If you have any questions, please contact us by email at {{ config('mail.support_email') }}.
         </div>
     </div>
 </body>

@@ -21,7 +21,7 @@
         </div>
 
         <div style="text-align:center;margin:30px 0;">
-            <a href="{{ env('FE_URL', 'https://app.example.com') }}" style="background:#007bff;color:#fff;padding:12px 30px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:bold;">
+            <a href="{{ config('app.fe_url') }}" style="background:#007bff;color:#fff;padding:12px 30px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:bold;">
                 🔐 Login ke Aplikasi
             </a>
         </div>
@@ -49,7 +49,7 @@
         <div style="margin-top:20px;color:#888;">
             <strong>Need help?</strong>
             <br>
-            If you have any questions or need assistance, please contact us by email at {{ env('MAIL_SUPPORT_EMAIL') ?? 'support@email.com' }}.
+            If you have any questions or need assistance, please contact us by email at {{ config('mail.support_email') }}.
         </div>
     </div>
 </body>

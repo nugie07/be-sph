@@ -118,4 +118,15 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Support Email Address
+    |--------------------------------------------------------------------------
+    |
+    | This email address is used for support contact information in emails.
+    | Set this in your ".env" file as MAIL_SUPPORT_EMAIL.
+    |
+    */
+    'support_email' => env('MAIL_SUPPORT_EMAIL', 'support@email.com'),
+
 ];
