@@ -128,6 +128,7 @@ class ManualController extends Controller
                             'id' => $detail->id,
                             'menu_id' => $detail->menu_id,
                             'sequence' => $detail->sequence,
+                            'title' => $detail->title,
                             'content' => $detail->content,
                             'created_at' => $detail->created_at ? $detail->created_at->format('Y-m-d H:i:s') : null,
                             'updated_at' => $detail->updated_at ? $detail->updated_at->format('Y-m-d H:i:s') : null,
@@ -193,6 +194,7 @@ class ManualController extends Controller
                         'id' => $detail->id,
                         'menu_id' => $detail->menu_id,
                         'sequence' => $detail->sequence,
+                        'title' => $detail->title,
                         'content' => $detail->content,
                         'created_at' => $detail->created_at ? $detail->created_at->format('Y-m-d H:i:s') : null,
                         'updated_at' => $detail->updated_at ? $detail->updated_at->format('Y-m-d H:i:s') : null,
@@ -470,6 +472,7 @@ class ManualController extends Controller
                 'id' => $detail->id,
                 'menu_id' => $detail->menu_id,
                 'sequence' => $detail->sequence,
+                'title' => $detail->title,
                 'content' => $detail->content,
                 'created_at' => $detail->created_at ? $detail->created_at->format('Y-m-d H:i:s') : null,
                 'updated_at' => $detail->updated_at ? $detail->updated_at->format('Y-m-d H:i:s') : null,
@@ -517,6 +520,7 @@ class ManualController extends Controller
             $validator = Validator::make($request->all(), [
                 'menu_id' => 'required|integer|exists:manual,id',
                 'sequence' => 'nullable|integer|min:0',
+                'title' => 'nullable|string|max:500',
                 'content' => 'required|string',
             ]);
 
@@ -543,6 +547,7 @@ class ManualController extends Controller
             $detail = ManualDetail::create([
                 'menu_id' => $request->menu_id,
                 'sequence' => $finalSequence,
+                'title' => $request->title ?? null,
                 'content' => $request->content,
             ]);
 
@@ -558,6 +563,7 @@ class ManualController extends Controller
                     'id' => $detail->id,
                     'menu_id' => $detail->menu_id,
                     'sequence' => $detail->sequence,
+                    'title' => $detail->title,
                     'content' => $detail->content,
                     'created_at' => $detail->created_at ? $detail->created_at->format('Y-m-d H:i:s') : null,
                 ]
@@ -602,6 +608,7 @@ class ManualController extends Controller
             $validator = Validator::make($request->all(), [
                 'menu_id' => 'required|integer|exists:manual,id',
                 'sequence' => 'nullable|integer|min:0',
+                'title' => 'nullable|string|max:500',
                 'content' => 'required|string',
             ]);
 
@@ -625,6 +632,7 @@ class ManualController extends Controller
             $detail->update([
                 'menu_id' => $request->menu_id,
                 'sequence' => $finalSequence,
+                'title' => $request->title ?? $detail->title,
                 'content' => $request->content,
             ]);
 
@@ -640,6 +648,7 @@ class ManualController extends Controller
                     'id' => $detail->id,
                     'menu_id' => $detail->menu_id,
                     'sequence' => $detail->sequence,
+                    'title' => $detail->title,
                     'content' => $detail->content,
                     'updated_at' => $detail->updated_at ? $detail->updated_at->format('Y-m-d H:i:s') : null,
                 ]
