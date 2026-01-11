@@ -11,6 +11,7 @@ class ManualDetail extends Model
     protected $fillable = [
         'menu_id',
         'sequence',
+        'title',
         'content',
     ];
 
