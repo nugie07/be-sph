@@ -35,26 +35,27 @@
 
 <body>
 	<!-- Header Table -->
-	<img style="width:100%; position:absolute; top: 20px; left: 10px !important; width: 13%; height:8%"
-		src="{{ public_path('static/images/logo/logo.png') }}"
-		alt="PT MINA MARRET LINTAS NUSANTARA Logo" />
-	<table width="100%">
+	<table width="100%" cellspacing="0" cellpadding="0">
 		<tr>
-			<td align="center" colspan="2">
-				<strong>PT MINA MARRET {{$dn->sph_type == "MMLN" ? "LINTAS NUSANTARA" : "TRANS ENERGI INDONESIA" }}</strong>
-				<p>Berdasarkan Surat PT Pertamina Patra Niaga No. 16849/PRD0000000/2022-53 Tanggal 22 Desember 2022</p>
-				<p>Jenis Komoditi / Produk: Solar HSD B35 MFO, Pertamax, Pertamina Turbo dan Dexlite</p>
-				<p>World Capital Tower Lt. 05 Unit H, Jl. Dr. Ide Anak Agung Gde Agung Kuningan Jakarta Selatan, DKI Jakarta 12950</p>
-				<p>Gagah Putera Satria Building, Jl. KP. Tendean No. 158 Banjarmasin, Kalimantan Selatan 70231</p>
-				<p>Email: info@mmln.com | Telp: 0811 - 8888 - 2221</p>
+			<td width="15%" style="vertical-align: top; padding-right: 10px;">
+				<img src="https://is3.cloudhost.id/bensinkustorage/logo/mina-marret-logo.png" alt="Logo" style="width: 100px; height: auto;">
+			</td>
+			<td width="85%" style="vertical-align: middle;">
+				<h2 style="margin: 0; padding: 0; font-size: 22px; font-weight: bold;">PT MINA MARRET TRANS ENERGI INDONESIA</h2>
+				<p style="margin: 5px 0 0 0; font-size: 11px; line-height: 1.5;">
+					World Capital Tower Lt. 05 Unit 01, Jl. DR. Ide Anak Agung Gde Lot D. Lingkar Mega Kuningan Jakarta Selatan, DKI Jakarta 12950<br/>
+					Gagah Putera Satria Building, Jl. KP. Tendean No. 158 Banjarmasin, Kalimantan Selatan 70231<br/>
+					Email : info@mmtei.com / Telp. 0811 - 8888 - 2221
+				</p>
 			</td>
 		</tr>
 	</table>
 	<hr>
 	<table width="100%">
 		<tr>
-			<td align="center" colspan="2">
-				<strong>DELIVERY NOTE <br /><span style="font-size: 12px;">BBM Non Subsidi</span></strong>
+			<td align="center">
+				<p style="margin: 0; font-size: 18px; font-weight: bold; text-decoration: underline;">DELIVERY NOTE</p>
+				<p style="margin: 5px 0 0 0; font-size: 14px; font-weight: bold;">BBM Non Subsidi</p>
 			</td>
 		</tr>
 	</table>
@@ -77,6 +78,11 @@
 						<td>{{$date}}</td>
 					</tr>
 					<tr>
+						<td>PO Number</td>
+						<td>:</td>
+						<td>{{$dn->po_number}}</td>
+					</tr>
+					<tr>
 						<td>PO From</td>
 						<td>:</td>
 						<td>{{$dn->po_from}}</td>
@@ -91,9 +97,9 @@
 			<td width="40%">
 				<table style="border: none">
 					<tr>
-						<td>PO Number</td>
+						<td>Req Arrival</td>
 						<td>:</td>
-						<td>{{$dn->po_number}}</td>
+						<td>{{$dn->arrival_date}}</td>
 					</tr>
 					<tr>
 						<td>Consignee</td>
@@ -136,7 +142,7 @@
 					<tr>
 						<td style="border: none; width:40%">Atas</td>
 						<td style="border: none">:</td>
-						<td style="border: none">{{$dn->no_segel_atas}}</td>
+						<td style="border: none">{{$dn->segel_atas}}</td>
 					</tr>
 				</table>
 			</td>
@@ -147,7 +153,7 @@
 					<tr>
 						<td style="border: none; width:40%">Bawah</td>
 						<td style="border: none">:</td>
-						<td style="border: none">{{$dn->no_segel_bawah}}</td>
+						<td style="border: none">{{$dn->segel_bawah}}</td>
 					</tr>
 				</table>
 			</td>
@@ -161,10 +167,12 @@
 		<tr>
 			<td>
 				<strong>NOTE:</strong><br />
-				1. Penerima di site WAJIB mengisi tabel catatan pembongkaran<br />
-				2. Transportir WAJIB mengisi tabel catatan pengiriman<br />
-				3. Kelengkapan pengisian dan Pengeluaran WAJIB TERSEGEL dengan baik<br />
-				<!-- 4. Pastikan anda mendapatkan SLIP LO Pertamina -->
+				1. Penerima di site <strong>Site PIC</strong> WAJIB mengisi tabel catatan pembongkaran<br />
+				2. Transportir <strong>WAJIB</strong> mengisi tabel catatan pengiriman<br />
+				3. Kran Tangki pengisian dan Pengeluaran <strong>WAJIB TERSEGEL</strong> dengan baik<br />
+				4. PIC site dan driver <strong>WAJIB</strong> mengambil sampel solar dan kedua belah pihak <strong>WAJIB MENYEGEL</strong> <br />
+				dengan baik dengan segel yang diberikan oleh PT Mina Marret Trans Energi Indonesia (dalam sosialisasi)
+
 			</td>
 		</tr>
 	</table>
@@ -187,17 +195,17 @@
 								<tr>
 									<td style="border: none">No. LO</td>
 									<td style="border: none">:</td>
-									<td style="border: none">{{$dn->no_so}}</td>
+									<td style="border: none">{{$dn->lo}}</td>
 								</tr>
 								<tr>
 									<td style="border: none">No. SO</td>
 									<td style="border: none">:</td>
-									<td style="border: none">{{$dn->no_lo}}</td>
+									<td style="border: none">{{$dn->so}}</td>
 								</tr>
 								<tr>
 									<td style="border: none">No. Polisi</td>
 									<td style="border: none">:</td>
-									<td style="border: none">{{$dn->no_police}}</td>
+									<td style="border: none">{{$dn->nopol}}</td>
 								</tr>
 								<tr>
 									<td style="border: none">Nama Driver</td>
@@ -212,17 +220,17 @@
 								<tr>
 									<td style="border: none">Tinggi Terra</td>
 									<td style="border: none">:</td>
-									<td style="border: none"></td>
+									<td style="border: none">{{$dn->terra ?? ''}}</td>
 								</tr>
 								<tr>
 									<td style="border: none">Berat Jenis</td>
 									<td style="border: none">:</td>
-									<td style="border: none"></td>
+									<td style="border: none">{{$dn->berat_jenis ?? ''}}</td>
 								</tr>
 								<tr>
 									<td style="border: none">Temperature</td>
 									<td style="border: none">:</td>
-									<td style="border: none"></td>
+									<td style="border: none">{{$dn->temperature ?? ''}}</td>
 								</tr>
 							</table>
 						</td>
@@ -242,42 +250,42 @@
 								<tr>
 									<td style="border: none">Tanggal</td>
 									<td style="border: none">:</td>
-									<td style="border: none"></td>
+									<td style="border: none">{{$dn->tgl_bongkar ?? ''}}</td>
 								</tr>
 								<tr>
 									<td style="border: none">Jam Mulai</td>
 									<td style="border: none">:</td>
-									<td style="border: none"></td>
+									<td style="border: none">{{$dn->jam_mulai ?? ''}}</td>
 								</tr>
 								<tr>
 									<td style="border: none">Jam Akhir</td>
 									<td style="border: none">:</td>
-									<td style="border: none"></td>
+									<td style="border: none">{{$dn->jam_akhir ?? ''}}</td>
 								</tr>
 								<tr>
 									<td style="border: none">Meter awal</td>
 									<td style="border: none">:</td>
-									<td style="border: none"></td>
+									<td style="border: none">{{$dn->meter_awal ?? ''}}</td>
 								</tr>
 								<tr>
 									<td style="border: none">Meter Akhir</td>
 									<td style="border: none">:</td>
-									<td style="border: none"></td>
+									<td style="border: none">{{$dn->meter_akhir ?? ''}}</td>
 								</tr>
 								<tr>
 									<td style="border: none">Tinggi Sounding</td>
 									<td style="border: none">:</td>
-									<td style="border: none"></td>
+									<td style="border: none">{{$dn->tinggi_sounding ?? ''}}</td>
 								</tr>
 								<tr>
 									<td style="border: none">Berat Jenis & Suhu</td>
 									<td style="border: none">:</td>
-									<td style="border: none"></td>
+									<td style="border: none">{{$dn->jenis_suhu ?? ''}}</td>
 								</tr>
 								<tr>
-									<td style="border: none">Volume yang diterima</td>
+									<td style="border: none"><strong>Volume yang diterima</strong></td>
 									<td style="border: none">:</td>
-									<td style="border: none"></td>
+									<td style="border: none">{{$dn->volume_diterima ?? ''}}</td>
 								</tr>
 							</table>
 						</td>
@@ -350,7 +358,7 @@
 		<tr>
 			<td>
 				<strong>Remarks:</strong> Harap di print 4 rangkap (2 rangkap untuk
-				MMLN, 1 rangkap untuk customer, 1 rangkap untuk transportir)
+				MMTEI, 1 rangkap untuk customer, 1 rangkap untuk transportir)
 			</td>
 		</tr>
 	</table>

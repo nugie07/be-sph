@@ -136,6 +136,7 @@ Route::put('/delivery-note/{id}', [DeliveryNoteController::class, 'update']);
 Route::delete('/delivery-note/{id}', [DeliveryNoteController::class, 'destroy']);
 Route::get('/delivery-note-dn-source', [DeliveryNoteController::class, 'dnSource']);
 Route::post('/delivery-note/upload-bast', [DeliveryNoteController::class, 'uploadBast']);
+Route::post('/delivery-note/recreate', [DeliveryNoteController::class, 'recreate']);
 
 // Finance Invoice Api
 Route::get('/finance/invoices', [FinanceInvoiceController::class, 'index']);

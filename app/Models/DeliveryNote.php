@@ -42,6 +42,7 @@ class DeliveryNote extends Model
         'tinggi_sounding',
         'jenis_suhu',
         'volume_diterima',
+        'dn_file',
         'created_by',
         'status',
         'file',
