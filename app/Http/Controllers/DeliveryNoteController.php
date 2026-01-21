@@ -160,15 +160,75 @@ public function show($id)
                 ]);
             }
 
+            // Generate DN No dengan format: DN-{dn_no}/{alias}-{sph_type}/{bulan_romawi}/{tahun}
+            // Contoh: DN-IASE115/GMK-IASE/VIII/2025
+            $dnNoFormatted = $note->dn_no ?? '';
+            if (!empty($note->dn_no)) {
+                // Query untuk mendapatkan alias dan tipe_sph
+                // SELECT DISTINCT mc.alias, dts.tipe_sph, mc.name
+                // FROM master_customer mc
+                // LEFT JOIN good_receipt gr ON gr.nama_customer = mc.name
+                // LEFT JOIN delivery_note dn ON dn.customer_po = gr.po_no
+                // LEFT JOIN data_trx_sph dts ON dts.kode_sph = gr.kode_sph
+                // WHERE dn.customer_po = {customer_po}
+                $customerAlias = '';
+                $sphType = 'MMTEI'; // Default
+                
+                if (!empty($note->customer_po)) {
+                    $aliasData = DB::table('master_customer as mc')
+                        ->leftJoin('good_receipt as gr', 'gr.nama_customer', '=', 'mc.name')
+                        ->leftJoin('delivery_note as dn', 'dn.customer_po', '=', 'gr.po_no')
+                        ->leftJoin('data_trx_sph as dts', 'dts.kode_sph', '=', 'gr.kode_sph')
+                        ->where('dn.customer_po', $note->customer_po)
+                        ->select('mc.alias', 'dts.tipe_sph', 'mc.name')
+                        ->distinct()
+                        ->first();
+                    
+                    if ($aliasData) {
+                        $customerAlias = $aliasData->alias ?? '';
+                        $sphType = $aliasData->tipe_sph ?? 'MMTEI';
+                    }
+                }
+                
+                // Konversi bulan ke romawi
+                $bulanRomawi = [
+                    1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV',
+                    5 => 'V', 6 => 'VI', 7 => 'VII', 8 => 'VIII',
+                    9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII'
+                ];
+                $bulanSekarang = (int) Carbon::now()->format('m');
+                $bulanRomawiStr = $bulanRomawi[$bulanSekarang] ?? '';
+                
+                // Tahun berjalan
+                $tahunSekarang = Carbon::now()->format('Y');
+                
+                // Format: DN-{dn_no}/{alias}-{sph_type}/{bulan_romawi}/{tahun}
+                $dnNoFormatted = 'DN-' . $note->dn_no;
+                if (!empty($customerAlias)) {
+                    $dnNoFormatted .= '/' . $customerAlias . '-' . $sphType;
+                }
+                $dnNoFormatted .= '/' . $bulanRomawiStr . '/' . $tahunSekarang;
+                
+                Log::info('DN No formatted', [
+                    'original_dn_no' => $note->dn_no,
+                    'customer_po' => $note->customer_po,
+                    'customer_alias' => $customerAlias,
+                    'tipe_sph' => $sphType,
+                    'bulan_romawi' => $bulanRomawiStr,
+                    'tahun' => $tahunSekarang,
+                    'formatted_dn_no' => $dnNoFormatted
+                ]);
+            }
+
             // Buat objek untuk template
             // Mapping sesuai dengan nama kolom di database delivery_note
             $dn = (object) [
                 'sph_type' => $note->sph_type ?? 'MMTEI', // Default MMTEI jika tidak ada
-                'no' => $note->dn_no ?? '',
+                'no' => $dnNoFormatted,
                 'po_from' => $note->customer_name ?? '',
                 'po_date' => $note->po_date ? Carbon::parse($note->po_date)->format('d/m/Y') : '',
                 'po_number' => $note->customer_po ?? '',
-                'arrival_date' => $note->arrival_date ? Carbon::parse($note->arrival_date)->format('d/m/Y') : '', // Req Arrival
+                'arrival_date' => $note->arrival_date ? Carbon::parse($note->arrival_date)->locale('id')->translatedFormat('l, d/m/Y') : '', // Req Arrival dengan nama hari (contoh: Rabu, 21/01/2026)
                 'consignee' => $note->consignee ?? $note->customer_name ?? '', // Gunakan consignee dari DB, fallback ke customer_name
                 'delivery_to' => $note->delivery_to ?? '',
                 'address' => $note->address ?? '',
@@ -211,8 +271,26 @@ public function show($id)
                 'dn_data' => (array) $dn
             ]);
 
+            // Tentukan template berdasarkan dn_no
+            // Jika dn_no mengandung "IASE" gunakan template dniase, selain itu gunakan dnmmtei
+            $dnNo = $note->dn_no ?? '';
+            if (stripos($dnNo, 'IASE') !== false) {
+                $template = 'pdf.dniase_pdf_template';
+                Log::info('Using IASE template for DN PDF', [
+                    'delivery_note_id' => $note->id,
+                    'dn_no' => $dnNo,
+                    'template' => $template
+                ]);
+            } else {
+                $template = 'pdf.dnmmtei_pdf_template';
+                Log::info('Using MMTEI template for DN PDF', [
+                    'delivery_note_id' => $note->id,
+                    'dn_no' => $dnNo,
+                    'template' => $template
+                ]);
+            }
+
             // Check if template exists
-            $template = 'pdf.dn_pdf_template';
             if (!view()->exists($template)) {
                 Log::error('Delivery Note PDF template not found', ['template' => $template]);
                 return [
