@@ -150,7 +150,17 @@ public function getApprovalDetails(Request $request)
                     ->groupBy('sph_id');
             }
 
-            $sphData = $sphItems->map(function ($item) use ($templateFormById, $detailsBySphId) {
+            // Prefetch temp_sph grouped by sph_id to avoid N+1
+            $tempSphBySphId = collect();
+            if ($sphIds->isNotEmpty()) {
+                $tempSphBySphId = DB::table('temp_sph')
+                    ->whereIn('sph_id', $sphIds)
+                    ->get()
+                    ->keyBy('sph_id');
+            }
+
+            $sphData = $sphItems->map(function ($item) use ($templateFormById, $detailsBySphId, $tempSphBySphId) {
+                    $tempSph = $tempSphBySphId->get($item->id);
                     return [
                         'id' => $item->id,
                         'tipe_sph' => $item->tipe_sph ?? '-',
@@ -173,6 +183,7 @@ public function getApprovalDetails(Request $request)
                         'template_id' => $item->template_id,
                         'template_form' => $templateFormById->get($item->template_id) ?? $templateFormById->get((string) $item->template_id) ?? null,
                         'details' => ($detailsBySphId->get($item->id) ?? collect())->values(),
+                        'temp_file' => $tempSph ? ($tempSph->temp_link ?? null) : null,
                     ];
                 });
 

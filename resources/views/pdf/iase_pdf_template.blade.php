@@ -154,8 +154,8 @@
             <div style="margin-bottom: 10px;">
                 <p>Kepada</p>
                 <p>{{ $sph->comp_name }}</p>
-                <p>Di Sumut</p>
-                <p>Up: {{ $sph->pic }}</p>
+                <p>Di Tempat</p>
+             
             </div>
             <div style="margin-bottom: 10px;">
                 <p>Dengan hormat,</p>
@@ -219,13 +219,37 @@
                                 $half = ceil($dataCount / 2);
                                 $leftData = $showTwoTables ? $customers->take($half) : $customers;
                                 $rightData = $showTwoTables ? $customers->slice($half) : collect();
+                                
+                                // Check if all qty values are null or 0 for left and right data
+                                $leftHasQty = $leftData->filter(function($customer) {
+                                    return !is_null($customer->qty) && $customer->qty != 0;
+                                })->count() > 0;
+                                
+                                $rightHasQty = $rightData->filter(function($customer) {
+                                    return !is_null($customer->qty) && $customer->qty != 0;
+                                })->count() > 0;
                                 @endphp
                                 <td style="padding: 0; vertical-align: top; @if($showTwoTables) padding-right: 20px; @endif">
                                     <table class="tableoat">
-                                        <thead><tr><th>Lokasi</th><th>Qty</th><th>OAT</th></tr></thead>
+                                        <thead>
+                                            <tr>
+                                                <th>Lokasi</th>
+                                                @if($leftHasQty)<th>Qty</th>@endif
+                                                <th>OAT</th>
+                                            </tr>
+                                        </thead>
                                         <tbody>
                                             @foreach ($leftData as $customer)
-                                            <tr><td>{{ $customer->location }}</td><td>{{ $customer->qty }}</td><td>{{ $customer->oat }}</td></tr>
+                                            <tr>
+                                                <td>{{ $customer->location }}</td>
+                                                @if($leftHasQty)<td>{{ $customer->qty }}</td>@endif
+                                                <td>
+                                                    {{ $customer->oat }}
+                                                    @if(strtoupper(trim($customer->oat ?? '')) !== 'ONSITE')
+                                                    <span class="info">/ ltr</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
                                             @endforeach
                                         </tbody>
                                     </table>
@@ -233,10 +257,25 @@
                                 @if ($showTwoTables)
                                 <td style="padding: 0; vertical-align: top;">
                                     <table class="tableoat">
-                                        <thead><tr><th>Lokasi</th><th>Qty</th><th>OAT</th></tr></thead>
+                                        <thead>
+                                            <tr>
+                                                <th>Lokasi</th>
+                                                @if($rightHasQty)<th>Qty</th>@endif
+                                                <th>OAT</th>
+                                            </tr>
+                                        </thead>
                                         <tbody>
                                             @foreach ($rightData as $customer)
-                                            <tr><td>{{ $customer->location }}</td><td>{{ $customer->qty }}</td><td>{{ $customer->oat }}</td></tr>
+                                            <tr>
+                                                <td>{{ $customer->location }}</td>
+                                                @if($rightHasQty)<td>{{ $customer->qty }}</td>@endif
+                                                <td>
+                                                    {{ $customer->oat }}
+                                                    @if(strtoupper(trim($customer->oat ?? '')) !== 'ONSITE')
+                                                    <span class="info">/ ltr</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
                                             @endforeach
                                         </tbody>
                                     </table>
@@ -258,15 +297,16 @@
             <div class="remarks">
                 <span style="font-weight:bold;">Remarks:</span>
                 <ol>
-                    <li>{{ $settings['Remark_1'] ?? '' }}</li>
-                    <li>{{ $settings['Remark_2'] ?? '' }}</li>
-                    <li>{{ $settings['Remark_3'] ?? '' }}</li>
-                    <li>{{ $settings['Remark_4'] ?? '' }}</li>
-                    <li>{{ $settings['Remark_5'] ?? '' }}</li>
-                    <li>{{ $settings['Remark_6'] ?? '' }}</li>
-                    <li>{{ $settings['Remark_7'] ?? '' }}</li>
-                    <li>{{ $sph->note_berlaku }}</li>
-                    <li>Toleransi Susut {{ $sph->susut }} % {{ $settings['Remark_9'] ?? '' }}</li>
+                    <li>Toleransi Susut {{ $sph->susut }} % berdasarkan flowmeter yang telah di kalibrasi atau tinggi cairan truk tangki transportir yang sudah di kalibrasi</li>
+                    <li><strong>{{ $sph->note_berlaku ?? 'Harga Berlaku' }}</strong> </li>
+                    <li>Tanggung Jawab PT IASE terhadap product yang dikirim baik kuantitas maupun kualitas adalah sampai pada saat sebelum bongkar dimana produk masih berada di truk
+                        tangki transportir PT IASE . Pelanggan berkewajiban mengambil sampel untuk disimpan dan memastikan produk dalam kondisi baik sebelum dibongkar.
+                    </li>
+                    <li>Produk sesuai dengan spesifikasi berdasarkan SK Dirjen Migas No. {{ $settings['other_config']['pbbkb_include_sk'] ?? '' }}</li>
+                    <li>PO harap dapat diemailkan ke {{ $email->useremail ?? '' }} dan {{ $settings['pbbkb_include_email2'] ?? '' }}</li>
+                    <li>Harga sewaktu waktu dapat berubah tanpa ada pemberitahuan terlebih dahulu</li>
+                    <li>Harap mencantumkan No Tagihan dan No PO pada bukti transfer anda sebagai bukti pembayaran yang sah</li>
+                    
                 </ol>
             </div>
             <p>Demikianlah proposal penawaran ini kami buat, bila ada pertanyaan mohon untuk menghubungi kami.</p>
@@ -274,19 +314,18 @@
         </div>
 
         <!-- Footer Section -->
-        <div style="position: absolute; bottom: 40px; left: 36px; right: 36px; width: auto;">
+        <div style="margin-top: 16px; width: 100%;">
             <table width="100%" style="border-collapse: collapse;">
             <tr>
             <!-- Kolom Tanda Tangan -->
             <td style="width:60%; vertical-align:bottom;">
             <div>
             Salam Sukses,<br><br><br><br>
-            <span style="font-weight:bold;">{{ $settings['other_config']['Footer_1'] ?? '' }}</span><br>
-            HP: {{ $settings['other_config']['Footer_2'] ?? '' }}
+            <span style="font-weight:bold;">{{ $email->first_name ?? '' }} {{ $email->last_name ?? '' }}</span>
             </div>
             </td>
             <!-- Kolom Logo dan ISO (disejajarkan ke kanan) -->
-            <td style="width:40%; vertical-align:bottom; text-align:right;">
+            <!-- <td style="width:40%; vertical-align:bottom; text-align:right;">
                 <div style="display:inline-flex; align-items:center; justify-content:flex-end; gap:14px;">
 
                     <span style="display:inline-flex; align-items:center; gap:8px;">
@@ -308,7 +347,7 @@
                         <span style="display:block; margin:0;">ISO 45001 : 2018 No. GMIO2311101</span>
                     </span>
                 </div>
-            </td>
+            </td> -->
             </tr>
             </table>
         </div>

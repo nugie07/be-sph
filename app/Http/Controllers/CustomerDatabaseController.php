@@ -680,8 +680,8 @@ class CustomerDatabaseController extends Controller
             $request->validate([
                 'cust_id' => 'required|integer|exists:master_customer,id',
                 'location' => 'required|string|max:255',
-                'qty' => 'required|string|max:255',
-                'oat' => 'required|string|max:255'
+                'qty' => 'nullable',
+                'oat' => 'nullable'
             ]);
 
             DB::beginTransaction();
@@ -802,8 +802,8 @@ class CustomerDatabaseController extends Controller
             $request->validate([
                 'cust_id' => 'required|integer|exists:master_customer,id',
                 'location' => 'required|string|max:255',
-                'qty' => 'required|string|max:255',
-                'oat' => 'required|string|max:255'
+                'qty' => 'nullable',
+                'oat' => 'nullable'
             ]);
 
             DB::beginTransaction();

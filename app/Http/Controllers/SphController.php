@@ -164,6 +164,43 @@ public function updateSph(Request $request)
             );
 
             DB::commit();
+
+            // Auto-generate PDF setelah update berhasil dan simpan ke temp_sph
+            try {
+                // Pilih generator berdasarkan .env DEFAULT_TEMPLATE dan template_id pada SPH
+                $defaultTemplatesEnv = env('DEFAULT_TEMPLATE', '');
+                $defaultTemplateIds = [];
+                if (!empty($defaultTemplatesEnv)) {
+                    foreach (explode(',', $defaultTemplatesEnv) as $val) {
+                        $val = trim($val);
+                        if ($val !== '') { $defaultTemplateIds[] = (int) $val; }
+                    }
+                }
+                $tplId = $validated['template_id'];
+                if (!empty($defaultTemplateIds) && in_array((int) $tplId, $defaultTemplateIds, true)) {
+                    $pdfResponse = $this->generatePdf($validated['sph_id']);
+                } else {
+                    $pdfResponse = $this->generateKmpPdfFile($validated['sph_id']);
+                }
+                if (is_a($pdfResponse, \Illuminate\Http\JsonResponse::class)) {
+                    $pdfData = $pdfResponse->getData(true);
+                    if (!empty($pdfData['pdf_url'])) {
+                        // Update ke table temp_sph
+                        DB::table('temp_sph')
+                            ->where('sph_id', $validated['sph_id'])
+                            ->update([
+                                'temp_link' => $pdfData['pdf_url'],
+                                'updated_at' => now()
+                            ]);
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::error('Auto generate PDF after SPH update gagal', [
+                    'sph_id' => $validated['sph_id'],
+                    'error'  => $e->getMessage()
+                ]);
+            }
+
             UserSysLogHelper::logFromAuth($result, 'Sph', 'updateSph');
             return response()->json(['message' => 'SPH berhasil diupdate!']);
         } catch (\Exception $e) {
@@ -347,6 +384,42 @@ public function SphStoreDetails(Request $request)
 
             DB::commit();
 
+            // Auto-generate PDF setelah simpan berhasil dan simpan ke temp_sph
+            try {
+                // Pilih generator berdasarkan .env DEFAULT_TEMPLATE dan template_id pada SPH
+                $defaultTemplatesEnv = env('DEFAULT_TEMPLATE', '');
+                $defaultTemplateIds = [];
+                if (!empty($defaultTemplatesEnv)) {
+                    foreach (explode(',', $defaultTemplatesEnv) as $val) {
+                        $val = trim($val);
+                        if ($val !== '') { $defaultTemplateIds[] = (int) $val; }
+                    }
+                }
+                $tplId = $sph->template_id;
+                if (!empty($defaultTemplateIds) && in_array((int) $tplId, $defaultTemplateIds, true)) {
+                    $pdfResponse = $this->generatePdf($sph->id);
+                } else {
+                    $pdfResponse = $this->generateKmpPdfFile($sph->id);
+                }
+                if (is_a($pdfResponse, \Illuminate\Http\JsonResponse::class)) {
+                    $pdfData = $pdfResponse->getData(true);
+                    if (!empty($pdfData['pdf_url'])) {
+                        // Simpan ke table temp_sph
+                        DB::table('temp_sph')->insert([
+                            'sph_id' => $sph->id,
+                            'temp_link' => $pdfData['pdf_url'],
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ]);
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::error('Auto generate PDF after SPH creation gagal', [
+                    'sph_id' => $sph->id,
+                    'error'  => $e->getMessage()
+                ]);
+            }
+
             UserSysLogHelper::logFromAuth($result, 'Sph', 'SphStoreDetails');
 
             return response()->json([
@@ -475,6 +548,42 @@ public function store(Request $request)
             );
 
             DB::commit();
+
+            // Auto-generate PDF setelah simpan berhasil dan simpan ke temp_sph
+            try {
+                // Pilih generator berdasarkan .env DEFAULT_TEMPLATE dan template_id pada SPH
+                $defaultTemplatesEnv = env('DEFAULT_TEMPLATE', '');
+                $defaultTemplateIds = [];
+                if (!empty($defaultTemplatesEnv)) {
+                    foreach (explode(',', $defaultTemplatesEnv) as $val) {
+                        $val = trim($val);
+                        if ($val !== '') { $defaultTemplateIds[] = (int) $val; }
+                    }
+                }
+                $tplId = $sph->template_id;
+                if (!empty($defaultTemplateIds) && in_array((int) $tplId, $defaultTemplateIds, true)) {
+                    $pdfResponse = $this->generatePdf($sph->id);
+                } else {
+                    $pdfResponse = $this->generateKmpPdfFile($sph->id);
+                }
+                if (is_a($pdfResponse, \Illuminate\Http\JsonResponse::class)) {
+                    $pdfData = $pdfResponse->getData(true);
+                    if (!empty($pdfData['pdf_url'])) {
+                        // Simpan ke table temp_sph
+                        DB::table('temp_sph')->insert([
+                            'sph_id' => $sph->id,
+                            'temp_link' => $pdfData['pdf_url'],
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ]);
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::error('Auto generate PDF after SPH creation gagal', [
+                    'sph_id' => $sph->id,
+                    'error'  => $e->getMessage()
+                ]);
+            }
 
             // Log aktivitas user
             UserSysLogHelper::logFromAuth($result, 'Sph', 'store');
