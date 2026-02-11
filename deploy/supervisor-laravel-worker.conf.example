@@ -1,0 +1,18 @@
+; Supervisor config untuk Laravel Queue Worker (production)
+; Copy ke /etc/supervisor/conf.d/ lalu:
+;   sudo supervisorctl reread
+;   sudo supervisorctl update
+;   sudo supervisorctl start sph-api-worker:*
+
+[program:sph-api-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/sph-api/artisan queue:work database --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/var/www/sph-api/storage/logs/worker.log
+stopwaitsecs=3600
