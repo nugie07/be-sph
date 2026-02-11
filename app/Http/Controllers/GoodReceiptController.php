@@ -183,7 +183,7 @@ public function update(Request $request, $po_id)
             if ($request->hasFile('file')) {
                 $path = $request->file('file')->store(
                     'good_receipt',
-                    'idcloudhost'
+                    'byteplus'
                 );
                 $gr->po_file = $path;
             }
@@ -208,7 +208,7 @@ public function update(Request $request, $po_id)
             DB::commit();
             // Kirim email notification ke user yang berhak
             try {
-                $pofile = "https://is3.cloudhost.id/bensinkustorage/$gr->po_file";
+                $pofile = byteplus_url($gr->po_file, 24 * 60); // 24 jam untuk link di email
                 $validatedForMail = [
                     'no_po'      => $gr->po_no,
                     'sph'       => $gr->kode_sph,
@@ -471,10 +471,10 @@ public function viewPdf(Request $request ,$path)
             }
         $user = User::find($result['id']);
        // Jangan tambahkan lagi 'good_receipt/', path sudah lengkap!
-    if (!Storage::disk('idcloudhost')->exists($path)) {
+    if (!Storage::disk('byteplus')->exists($path)) {
         abort(404, 'File not found');
     }
-    $stream = Storage::disk('idcloudhost')->readStream($path);
+    $stream = Storage::disk('byteplus')->readStream($path);
 
     return response()->stream(function() use ($stream) {
         fpassthru($stream);
@@ -580,7 +580,7 @@ public function revisi(Request $request, $id)
                 if ($request->hasFile('file')) {
                     $path = $request->file('file')->store(
                         'good_receipt',
-                        'idcloudhost'
+                        'byteplus'
                     );
                     $gr->po_file = $path;
                 }
@@ -760,7 +760,7 @@ public function revisi(Request $request, $id)
             if ($request->hasFile('file_po')) {
                 $filePath = $request->file('file_po')->store(
                     'good_receipt',
-                    'idcloudhost'
+                    'byteplus'
                 );
             }
 
@@ -842,7 +842,7 @@ public function revisi(Request $request, $id)
                     'po_no' => $gr->po_no,
                     'nama_customer' => $gr->nama_customer,
                     'total' => $gr->total,
-                    'file_po' => $filePath ? 'https://is3.cloudhost.id/bensinkustorage/' . $filePath : null,
+                    'file_po' => $filePath ? byteplus_url($filePath) : null,
                     'status' => $gr->status,
                 ]
             ], 201);

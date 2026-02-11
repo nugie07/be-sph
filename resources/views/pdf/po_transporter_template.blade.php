@@ -72,7 +72,7 @@
         <table>
             <tr>
                 <td style="width: 20%; text-align: center; vertical-align: top; border:none;">
-                    <img src="https://is3.cloudhost.id/bensinkustorage/logo/mina-marret-logo.png" alt="Company Logo" style="height: 70px; margin-bottom: 5px;">
+                    <img src="{{ $storage_url }}/logo/mina-marret-logo.png" alt="Company Logo" style="height: 70px; margin-bottom: 5px;">
                      <p style="font-size:8px; text-align:center; font-weight:bold; line-height: 1.2;">PT. MINA MARRET TRANS<br>ENERGI INDONESIA</p>
                 </td>
                 <td style="width: 80%; border: none; text-align: center">
@@ -267,7 +267,7 @@
                 <td style="align-items: center; text-align:center">
                     <p class="footer-title">Reqeusted By</p>
                 <img style="height: 100px; width:auto; object-fit:contain;"
-                    src="https://is3.cloudhost.id/bensinkustorage/logo/aris_sign.png"
+                    src="{{ $storage_url }}/logo/aris_sign.png"
                     alt=""
                 />
                 <p class="footer-name">Aris</p>
@@ -275,7 +275,7 @@
                 <td style="align-items: center; text-align:center">
                     <p class="footer-title">Prepare By</p>
                 <img style="height: 100px; width:auto; object-fit:contain;"
-                    src="https://is3.cloudhost.id/bensinkustorage/logo/rachman_sign.png"
+                    src="{{ $storage_url }}/logo/rachman_sign.png"
                     alt=""
                 />
                 <p class="footer-name">Rachman</p>
@@ -284,7 +284,7 @@
                 <td style="align-items: center; text-align:center" >
                     <p class="footer-title">Authorized By</p>
                     <img style="height: 100px; width:auto; object-fit:contain;"
-                        src="https://is3.cloudhost.id/bensinkustorage/logo/tantry_sign.png"
+                        src="{{ $storage_url }}/logo/tantry_sign.png"
                         alt=""
                     />
                     <p class="footer-name">Tantry Wahyuni </p></td>

@@ -181,7 +181,7 @@ public function deliveryNoteSequence(Request $request)
     }
 
     /**
-     * Generate PDF for a Delivery Request and upload to idcloudhost.
+     * Generate PDF for a Delivery Request and upload to byteplus.
      *
      * @param string $drs_unique
      * @return \Illuminate\Http\JsonResponse
@@ -227,10 +227,10 @@ public function generatePdf(string $drs_unique)
         );
         // Define filename and path
         $filename = 'drs/'.$drs_unique.'.pdf';
-        // Store PDF on idcloudhost disk
-        Storage::disk('idcloudhost')->put($filename, $pdf->output());
+        // Store PDF on byteplus disk
+        Storage::disk('byteplus')->put($filename, $pdf->output());
         // Get URL
-        $url = Storage::disk('idcloudhost')->url($filename);
+        $url = byteplus_url($filename);
         return response()->json([
             'pdf_url'    => $url,
             'logo_url'   => $logoUrl,

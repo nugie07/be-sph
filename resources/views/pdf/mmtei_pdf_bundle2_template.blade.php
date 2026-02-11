@@ -99,7 +99,7 @@
                 <tr>
                     <td width="12%" style="vertical-align:top;">
                         @php
-                            $logoSrc = 'https://is3.cloudhost.id/bensinkustorage/logo/mina-marret-logo.png';
+                            $logoSrc = $storage_url . '/logo/mina-marret-logo.png';
                         @endphp
                         @if(!empty($logoSrc))
                             <img src="{{ $logoSrc }}" alt="Logo" style="width:90px; height:auto; object-fit:contain; display:block; margin:0 auto;">
@@ -111,10 +111,10 @@
                         <h4>PT MINA MARRET TRANS ENERGI INDONESIA</h4>
                         <p>AGEN BBM INDUSTRI</p>
                         <small>
-                            Jenis Komoditi/ Produk: {{ $settings['header_komoditi_produk_mmtei'] ?? '' }}<br />
-                            World Capital Tower 5th Floor, Unit 01, Jl. Mega Kuningan Barat No. 3, Kec. Setiabudi, Jakarta Selatan 12950<br />
-                            Gagah Putera Satria Building Jl. KP Tendean No. 158 Banjarmasin, Kalimantan Selatan 70231<br />
-                            {{ $settings['Sub_Title_4'] ?? '' }}
+                        Jenis Komoditi/ Produk: Solar HSD B40<br />
+                        World Capital Tower 5th Floor, Unit 01, Jl. Mega Kuningan Barat No. 3, Kec. Setiabudi, Jakarta Selatan 12950<br />
+                        Gagah Putera Satria Building Jl. KP Tendean No. 158 Banjarmasin, Kalimantan Selatan 70231<br />
+                        {{ $settings['Sub_Title_4'] ?? '' }}
                         </small>
                     </td>
                 </tr>
@@ -131,8 +131,7 @@
             <div style="margin-bottom: 15px;">
                 <p>Kepada</p>
                 <p>{{ $sph->comp_name }}</p>
-                <p>Di Sumut</p>
-                <p>Up: {{ $sph->pic }}</p>
+                
             </div>
             <div style="margin-bottom: 15px;">
                 <p>Dengan hormat,</p>
@@ -391,11 +390,10 @@
             <table width="100%" style="border-collapse: collapse;">
                 <tr>
                     <td style="width:60%; vertical-align:bottom;">
-                        <div>
-                            Salam Sukses,<br><br><br><br>
-                            <span style="font-weight:bold;">{{ $settings['other_config']['footer_pbbkb_1'] ?? '' }}</span><br>
-                            {{ $settings['other_config']['footer_pbbkb_2'] ?? '' }}
-                        </div>
+                    <div>
+                    Salam Sukses,<br><br><br><br>
+                    <span style="font-weight:bold;">{{ $email->first_name ?? '' }} {{ $email->last_name ?? '' }}</span>
+                    </div>
                     </td>
                     <td style="width:40%; vertical-align:bottom; text-align:right;">
                         <div style="display:inline-flex; align-items:center; justify-content:flex-end; gap:14px;">

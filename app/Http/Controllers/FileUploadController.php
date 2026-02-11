@@ -15,7 +15,7 @@ class FileUploadController extends Controller
     $folder = $request->input('folder');
     $path = $request->file('file')->store(
         $folder, // folder dalam bucket (opsional)
-        'idcloudhost' // disk name
+        'byteplus' // disk name
     );
 
     return response()->json(['path' => $path]);

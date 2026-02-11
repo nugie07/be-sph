@@ -20,9 +20,11 @@ use App\Models\DataProduct;
 use App\Models\DataTrxSph;
 use App\Models\WorkflowRecord;
 use App\Models\WorkflowRemark;
+use App\Models\WorkflowEngine;
 use App\Models\User;
 use App\Helpers\WorkflowHelper;
 use App\Helpers\UserSysLogHelper;
+use App\Jobs\GenerateSphPdfJob;
 
 class SphController extends Controller
 {
@@ -165,44 +167,15 @@ public function updateSph(Request $request)
 
             DB::commit();
 
-            // Auto-generate PDF setelah update berhasil dan simpan ke temp_sph
-            try {
-                // Pilih generator berdasarkan .env DEFAULT_TEMPLATE dan template_id pada SPH
-                $defaultTemplatesEnv = env('DEFAULT_TEMPLATE', '');
-                $defaultTemplateIds = [];
-                if (!empty($defaultTemplatesEnv)) {
-                    foreach (explode(',', $defaultTemplatesEnv) as $val) {
-                        $val = trim($val);
-                        if ($val !== '') { $defaultTemplateIds[] = (int) $val; }
-                    }
-                }
-                $tplId = $validated['template_id'];
-                if (!empty($defaultTemplateIds) && in_array((int) $tplId, $defaultTemplateIds, true)) {
-                    $pdfResponse = $this->generatePdf($validated['sph_id']);
-                } else {
-                    $pdfResponse = $this->generateKmpPdfFile($validated['sph_id']);
-                }
-                if (is_a($pdfResponse, \Illuminate\Http\JsonResponse::class)) {
-                    $pdfData = $pdfResponse->getData(true);
-                    if (!empty($pdfData['pdf_url'])) {
-                        // Update ke table temp_sph
-                        DB::table('temp_sph')
-                            ->where('sph_id', $validated['sph_id'])
-                            ->update([
-                                'temp_link' => $pdfData['pdf_url'],
-                                'updated_at' => now()
-                            ]);
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::error('Auto generate PDF after SPH update gagal', [
-                    'sph_id' => $validated['sph_id'],
-                    'error'  => $e->getMessage()
-                ]);
-            }
+            $this->dispatchGenerateSphPdfJob(
+                (int) $validated['sph_id'],
+                false,
+                'update',
+                $updaterId ?? null
+            );
 
             UserSysLogHelper::logFromAuth($result, 'Sph', 'updateSph');
-            return response()->json(['message' => 'SPH berhasil diupdate!']);
+            return response()->json(['message' => 'SPH berhasil diupdate! PDF akan digenerate di background.']);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Gagal mengupdate SPH.', 'error' => $e->getMessage()], 500);
@@ -385,45 +358,12 @@ public function SphStoreDetails(Request $request)
             DB::commit();
 
             // Auto-generate PDF setelah simpan berhasil dan simpan ke temp_sph
-            try {
-                // Pilih generator berdasarkan .env DEFAULT_TEMPLATE dan template_id pada SPH
-                $defaultTemplatesEnv = env('DEFAULT_TEMPLATE', '');
-                $defaultTemplateIds = [];
-                if (!empty($defaultTemplatesEnv)) {
-                    foreach (explode(',', $defaultTemplatesEnv) as $val) {
-                        $val = trim($val);
-                        if ($val !== '') { $defaultTemplateIds[] = (int) $val; }
-                    }
-                }
-                $tplId = $sph->template_id;
-                if (!empty($defaultTemplateIds) && in_array((int) $tplId, $defaultTemplateIds, true)) {
-                    $pdfResponse = $this->generatePdf($sph->id);
-                } else {
-                    $pdfResponse = $this->generateKmpPdfFile($sph->id);
-                }
-                if (is_a($pdfResponse, \Illuminate\Http\JsonResponse::class)) {
-                    $pdfData = $pdfResponse->getData(true);
-                    if (!empty($pdfData['pdf_url'])) {
-                        // Simpan ke table temp_sph
-                        DB::table('temp_sph')->insert([
-                            'sph_id' => $sph->id,
-                            'temp_link' => $pdfData['pdf_url'],
-                            'created_at' => now(),
-                            'updated_at' => now()
-                        ]);
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::error('Auto generate PDF after SPH creation gagal', [
-                    'sph_id' => $sph->id,
-                    'error'  => $e->getMessage()
-                ]);
-            }
+            $this->dispatchGenerateSphPdfJob($sph->id, false, 'insert', $user->id ?? null);
 
             UserSysLogHelper::logFromAuth($result, 'Sph', 'SphStoreDetails');
 
             return response()->json([
-                'message' => 'SPH dan details berhasil disimpan!',
+                'message' => 'SPH dan details berhasil disimpan! PDF akan digenerate di background.',
                 'sph_id'  => $sph->id
             ], 201);
         } catch (\Exception $e) {
@@ -550,45 +490,11 @@ public function store(Request $request)
             DB::commit();
 
             // Auto-generate PDF setelah simpan berhasil dan simpan ke temp_sph
-            try {
-                // Pilih generator berdasarkan .env DEFAULT_TEMPLATE dan template_id pada SPH
-                $defaultTemplatesEnv = env('DEFAULT_TEMPLATE', '');
-                $defaultTemplateIds = [];
-                if (!empty($defaultTemplatesEnv)) {
-                    foreach (explode(',', $defaultTemplatesEnv) as $val) {
-                        $val = trim($val);
-                        if ($val !== '') { $defaultTemplateIds[] = (int) $val; }
-                    }
-                }
-                $tplId = $sph->template_id;
-                if (!empty($defaultTemplateIds) && in_array((int) $tplId, $defaultTemplateIds, true)) {
-                    $pdfResponse = $this->generatePdf($sph->id);
-                } else {
-                    $pdfResponse = $this->generateKmpPdfFile($sph->id);
-                }
-                if (is_a($pdfResponse, \Illuminate\Http\JsonResponse::class)) {
-                    $pdfData = $pdfResponse->getData(true);
-                    if (!empty($pdfData['pdf_url'])) {
-                        // Simpan ke table temp_sph
-                        DB::table('temp_sph')->insert([
-                            'sph_id' => $sph->id,
-                            'temp_link' => $pdfData['pdf_url'],
-                            'created_at' => now(),
-                            'updated_at' => now()
-                        ]);
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::error('Auto generate PDF after SPH creation gagal', [
-                    'sph_id' => $sph->id,
-                    'error'  => $e->getMessage()
-                ]);
-            }
+            $this->dispatchGenerateSphPdfJob($sph->id, false, 'insert', $user->id ?? null);
 
-            // Log aktivitas user
             UserSysLogHelper::logFromAuth($result, 'Sph', 'store');
 
-            return response()->json(['message' => 'SPH berhasil disimpan!'], 201);
+            return response()->json(['message' => 'SPH berhasil disimpan! PDF akan digenerate di background.'], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -781,7 +687,20 @@ public function approveSph(Request $request, $id)
                 'wf_status'   => 1
             ])->first();
 
-            if (!$currWf) throw new \Exception("Workflow aktif tidak ditemukan!");
+            // Jika workflow aktif tidak ditemukan, buat dari workflow_engine (first_appr → curr_role, second_appr → next_role)
+            if (!$currWf) {
+                $engine = WorkflowEngine::where('tipe_trx', 'sph')->first();
+                if (!$engine) {
+                    throw new \Exception("Workflow aktif tidak ditemukan dan konfigurasi workflow_engine untuk SPH tidak ada.");
+                }
+                $currWf = WorkflowRecord::create([
+                    'trx_id'    => $id,
+                    'tipe_trx'  => 'sph',
+                    'curr_role' => $engine->first_appr,
+                    'next_role' => $engine->second_appr,
+                    'wf_status' => 1,
+                ]);
+            }
             // Cek role user harus sama dengan curr_role, kecuali jika role_id == 1 (admin/superuser)
             if ($userRoleId != $currWf->curr_role && $userRoleId != 1) {
                 return response()->json(['message' => 'Gagal ! , Role anda tidak berhak untuk simpan data ini'], 403);
@@ -814,37 +733,7 @@ public function approveSph(Request $request, $id)
                     ]);
                     $wf_remark_id = $currWf->id;
 
-                    // Auto-generate PDF after final approval dan simpan URL ke file_sph
-                    try {
-                        // Pilih generator berdasarkan .env DEFAULT_TEMPLATE dan template_id pada SPH
-                        $defaultTemplatesEnv = env('DEFAULT_TEMPLATE', '');
-                        $defaultTemplateIds = [];
-                        if (!empty($defaultTemplatesEnv)) {
-                            foreach (explode(',', $defaultTemplatesEnv) as $val) {
-                                $val = trim($val);
-                                if ($val !== '') { $defaultTemplateIds[] = (int) $val; }
-                            }
-                        }
-                        $tplId = DataTrxSph::where('id', $id)->value('template_id');
-                        if (!empty($defaultTemplateIds) && in_array((int) $tplId, $defaultTemplateIds, true)) {
-                            $pdfResponse = $this->generatePdf($id);
-                        } else {
-                            $pdfResponse = $this->generateKmpPdfFile($id);
-                        }
-                        if (is_a($pdfResponse, \Illuminate\Http\JsonResponse::class)) {
-                            $pdfData = $pdfResponse->getData(true);
-                            if (!empty($pdfData['pdf_url'])) {
-                                DataTrxSph::where('id', $id)->update([
-                                    'file_sph' => $pdfData['pdf_url']
-                                ]);
-                            }
-                        }
-                    } catch (\Throwable $e) {
-                        Log::error('Auto generate PDF after final approval gagal', [
-                            'sph_id' => $id,
-                            'error'  => $e->getMessage()
-                        ]);
-                    }
+                    $this->dispatchGenerateSphPdfJob((int) $id, true, 'update', $user->id ?? null);
                 }
             } else {
                 // Reject = 3, Revisi = 2
@@ -906,6 +795,161 @@ public function send(Request $request)
         }
         log_system('sph', 'SPH -> Email', 'Email', $validated, $response);
         return response()->json($response);
+    }
+
+    /**
+     * Generate ulang PDF SPH dan update kolom link di data_trx_sph (file_sph) dan temp_sph (temp_link).
+     */
+    public function recreateSph(Request $request, $id)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        $sph = DataTrxSph::find($id);
+        if (!$sph) {
+            return response()->json([
+                'success' => false,
+                'message' => 'SPH tidak ditemukan.'
+            ], 404);
+        }
+
+        $sphId = (int) $id;
+
+        // 1. Set NULL temp_link (temp_sph) dan file_sph (data_trx_sph) berdasarkan sph_id
+        DB::table('temp_sph')->where('sph_id', $sphId)->update(['temp_link' => null]);
+        DataTrxSph::where('id', $sphId)->update(['file_sph' => null]);
+
+        // 2. Setelah NULL, hit lagi GenerateSphPdfJob
+        $userId = $result['id'] ?? null;
+        $jobId = $this->dispatchGenerateSphPdfJob($sphId, true, 'update', $userId);
+
+        UserSysLogHelper::logFromAuth($result, 'Sph', 'recreateSph');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'PDF SPH sedang digenerate di background. Setelah selesai, file_sph dan temp file (preview) akan terupdate. Cek status di GET /api/sph/pdf-jobs?sph_id=' . $sphId,
+            'sph_id' => $sphId,
+            'pdf_job_id' => $jobId,
+            'poll_url' => '/api/sph/pdf-jobs?sph_id=' . $sphId,
+            'preview_url_endpoint' => '/api/sph/' . $sphId . '/preview-url',
+        ]);
+    }
+
+    /**
+     * URL preview PDF SPH (dari temp_sph, fallback file_sph).
+     * FE bisa poll endpoint ini setelah Recreate sampai dapat url (job selesai).
+     */
+    public function previewUrl(Request $request, $id)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        $sph = DataTrxSph::find($id);
+        if (!$sph) {
+            return response()->json(['success' => false, 'message' => 'SPH tidak ditemukan.'], 404);
+        }
+
+        $tempSph = DB::table('temp_sph')->where('sph_id', (int) $id)->first();
+        if ($tempSph && !empty($tempSph->temp_link)) {
+            return response()->json([
+                'success' => true,
+                'preview_url' => byteplus_url($tempSph->temp_link),
+                'source' => 'temp_sph',
+            ]);
+        }
+
+        if (!empty($sph->file_sph)) {
+            return response()->json([
+                'success' => true,
+                'preview_url' => byteplus_url($sph->file_sph),
+                'source' => 'file_sph',
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'preview_url' => null,
+            'message' => 'Preview belum tersedia. Job mungkin masih proses—coba lagi dalam beberapa detik.',
+        ]);
+    }
+
+    /**
+     * List status job generate PDF SPH (monitoring: queued, processing, success, failed).
+     * - Search by kode_sph (LIKE).
+     * - Item dengan status failed punya can_recreate: true (FE tampilkan tombol Recreate → POST /api/sph/{sph_id}/recreate-pdf).
+     */
+    public function pdfJobs(Request $request)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        $query = DB::table('sph_pdf_jobs')->orderBy('created_at', 'desc');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('sph_id')) {
+            $query->where('sph_id', (int) $request->sph_id);
+        }
+        if ($request->filled('user_id')) {
+            $query->where('triggered_by_user_id', (int) $request->user_id);
+        }
+        if ($request->filled('kode_sph')) {
+            $query->where('kode_sph', 'like', '%' . $request->kode_sph . '%');
+        }
+
+        $perPage = min((int) $request->get('per_page', 15), 100);
+        $items = $query->paginate($perPage);
+
+        $data = array_map(function ($row) {
+            $arr = (array) $row;
+            $arr['can_recreate'] = isset($row->status) && $row->status === 'failed';
+            if (!empty($row->pdf_url) && !str_starts_with($row->pdf_url, 'http')) {
+                $arr['pdf_url'] = byteplus_url($row->pdf_url);
+            }
+            return $arr;
+        }, $items->items());
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+            'meta' => [
+                'current_page' => $items->currentPage(),
+                'last_page' => $items->lastPage(),
+                'per_page' => $items->perPage(),
+                'total' => $items->total(),
+            ],
+        ]);
+    }
+
+    /**
+     * Dispatch async job untuk generate PDF SPH dan (opsional) insert/update monitoring row.
+     */
+    private function dispatchGenerateSphPdfJob(int $sphId, bool $updateFileSph, string $tempSphAction, ?int $triggeredByUserId = null): int
+    {
+        $kodeSph = DB::table('data_trx_sph')->where('id', $sphId)->value('kode_sph');
+
+        $jobId = DB::table('sph_pdf_jobs')->insertGetId([
+            'sph_id' => $sphId,
+            'kode_sph' => $kodeSph,
+            'status' => 'queued',
+            'attempt' => 1,
+            'update_file_sph' => $updateFileSph,
+            'temp_sph_action' => $tempSphAction,
+            'triggered_by_user_id' => $triggeredByUserId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        GenerateSphPdfJob::dispatch($sphId, $updateFileSph, $tempSphAction, $jobId);
+
+        return $jobId;
     }
 
 public function generatePdf($id)
@@ -1218,10 +1262,10 @@ public function generatePdf($id)
         $pdfContent = $pdf->output();
 
         // Save to remote storage
-        Storage::disk('idcloudhost')->put($pdfPath, $pdfContent);
+        Storage::disk('byteplus')->put($pdfPath, $pdfContent);
         // If file size > 1MB, try re-render at lower DPI
         try {
-            $currentSize = Storage::disk('idcloudhost')->size($pdfPath);
+            $currentSize = Storage::disk('byteplus')->size($pdfPath);
             if ($currentSize !== false && $currentSize > 1024 * 1024) {
                 Log::info('SPH PDF >1MB, re-render with lower DPI', ['sph_id' => $sph->id, 'size' => $currentSize]);
                 $pdfLow = Pdf::setOptions([
@@ -1240,7 +1284,7 @@ public function generatePdf($id)
                         'gmiLogoSrc'      => $gmiLogoBase64 ?: $gmiUrl,
                         'email'           => $email,
                     ])->setPaper('a4', 'portrait');
-                Storage::disk('idcloudhost')->put($pdfPath, $pdfLow->output());
+                Storage::disk('byteplus')->put($pdfPath, $pdfLow->output());
             }
         } catch (\Throwable $e) {
             Log::warning('Failed to re-render lower DPI for SPH PDF', ['error' => $e->getMessage()]);
@@ -1268,7 +1312,8 @@ public function generatePdf($id)
             'tipe_sph_used'   => $incomingType,
             'template_used'   => $bladeTemplate,
             'settings_parent' => $parentId,
-            'pdf_url'         => 'https://is3.cloudhost.id/bensinkustorage/' . $pdfPath,
+            'pdf_url'         => byteplus_url($pdfPath),
+            'pdf_path'        => $pdfPath,
             'logo_loaded'     => !empty($logoBase64),
             'asib_loaded'     => !empty($asibLogoBase64),
             'gmi_loaded'      => !empty($gmiLogoBase64),
@@ -1469,10 +1514,10 @@ public function generatePdf($id)
         $pdfPath = $typeFolder . '/' . $pdfFileName;
 
         $pdfContent = $pdf->output();
-        Storage::disk('idcloudhost')->put($pdfPath, $pdfContent);
+        Storage::disk('byteplus')->put($pdfPath, $pdfContent);
         // If file size > 1MB, try re-render at lower DPI
         try {
-            $currentSize = Storage::disk('idcloudhost')->size($pdfPath);
+            $currentSize = Storage::disk('byteplus')->size($pdfPath);
             if ($currentSize !== false && $currentSize > 1024 * 1024) {
                 Log::info('SPH PDF >1MB (backup), re-render with lower DPI', ['sph_id' => $sph->id, 'size' => $currentSize]);
                 $pdfLow = Pdf::setOptions([
@@ -1490,7 +1535,7 @@ public function generatePdf($id)
                         'asibLogoSrc'     => $asibLogoBase64 ?: $asibUrl,
                         'gmiLogoSrc'      => $gmiLogoBase64 ?: $gmiUrl,
                     ])->setPaper('a4', 'portrait');
-                Storage::disk('idcloudhost')->put($pdfPath, $pdfLow->output());
+                Storage::disk('byteplus')->put($pdfPath, $pdfLow->output());
             }
         } catch (\Throwable $e) {
             Log::warning('Failed to re-render lower DPI for SPH PDF (backup)', ['error' => $e->getMessage()]);
@@ -1518,7 +1563,8 @@ public function generatePdf($id)
             'tipe_sph_used'   => $incomingType, // tipe_sph_used bisa saja fallback ke MMTEI jika value di DB tidak valid
             'template_used'   => $bladeTemplate,
             'settings_parent' => $parentId,
-            'pdf_url'         => 'https://is3.cloudhost.id/bensinkustorage/' . $pdfPath,
+            'pdf_url'         => byteplus_url($pdfPath),
+            'pdf_path'        => $pdfPath,
             'logo_loaded'     => !empty($logoBase64),
             'asib_loaded'     => !empty($asibLogoBase64),
             'gmi_loaded'      => !empty($gmiLogoBase64),
@@ -1851,9 +1897,9 @@ public function downloadPdf($id)
         $pdfPath = $typeFolder . '/' . $pdfFileName;
 
         $pdfContent = $pdf->output();
-        Storage::disk('idcloudhost')->put($pdfPath, $pdfContent);
+        Storage::disk('byteplus')->put($pdfPath, $pdfContent);
         try {
-            $currentSize = Storage::disk('idcloudhost')->size($pdfPath);
+            $currentSize = Storage::disk('byteplus')->size($pdfPath);
             if ($currentSize !== false && $currentSize > 1024 * 1024) {
                 $pdfLow = Pdf::setOptions([
                         'enable_remote'   => true,
@@ -1873,7 +1919,7 @@ public function downloadPdf($id)
                         'details_grouped'  => $detailsGrouped,
                         'email'            => $email,
                     ])->setPaper('a4', 'portrait');
-                Storage::disk('idcloudhost')->put($pdfPath, $pdfLow->output());
+                Storage::disk('byteplus')->put($pdfPath, $pdfLow->output());
             }
         } catch (\Throwable $e) {
             Log::warning('Failed to re-render KMP PDF lower DPI', ['error' => $e->getMessage()]);
@@ -1921,8 +1967,9 @@ public function downloadPdf($id)
 
         return response()->json([
             'success'        => true,
-            'pdf_url'        => 'https://is3.cloudhost.id/bensinkustorage/' . $pdfPath,
+            'pdf_url'        => byteplus_url($pdfPath),
             'path'           => $pdfPath,
+            'pdf_path'       => $pdfPath,
             'tipe_sph_used'  => $incomingType,
             'has_details'    => $hasDetails,
             'details'        => $detailsArray,

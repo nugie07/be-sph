@@ -491,7 +491,7 @@ class CustomerDatabaseController extends Controller
 
         try {
             $customers = DB::table('master_customer')
-                ->select('id', 'alias', 'name')
+                ->select('id', 'alias', 'name', 'type')
                 ->whereNull('deleted_at')
                 ->orderBy('name', 'asc')
                 ->get();
@@ -550,13 +550,10 @@ class CustomerDatabaseController extends Controller
                     'oc.oat',
                     'oc.created_at',
                     'oc.updated_at',
-                    'oc.deleted_at',
                     'mc.name as customer_name',
                     'mc.alias as customer_alias'
                 ])
                 ->where('mc.id', $customerId)
-                ->whereNull('mc.deleted_at')
-                ->whereNull('oc.deleted_at')
                 ->orderBy('oc.created_at', 'desc')
                 ->get();
 
@@ -605,11 +602,8 @@ class CustomerDatabaseController extends Controller
         }
 
         try {
-            // Check if OAT data exists
-            $existingData = DB::table('oat_customer')
-                ->where('id', $id)
-                ->whereNull('deleted_at')
-                ->first();
+            // Check if OAT data exists (by id only; hard delete will remove row permanently)
+            $existingData = DB::table('oat_customer')->where('id', $id)->first();
 
             if (!$existingData) {
                 return response()->json([
@@ -618,21 +612,18 @@ class CustomerDatabaseController extends Controller
                 ], 404);
             }
 
+            $custId = $existingData->cust_id;
+
             DB::beginTransaction();
 
-            // Soft delete - update deleted_at
-            DB::table('oat_customer')
-                ->where('id', $id)
-                ->update([
-                    'deleted_at' => now(),
-                    'updated_at' => now()
-                ]);
+            // Hard delete: hapus permanen dari tabel
+            DB::table('oat_customer')->where('id', $id)->delete();
 
             DB::commit();
 
-            Log::info('OAT customer soft deleted successfully', [
+            Log::info('OAT customer hard deleted', [
                 'id' => $id,
-                'cust_id' => $existingData->cust_id,
+                'cust_id' => $custId,
                 'deleted_by' => $user->first_name . ' ' . $user->last_name
             ]);
 
@@ -640,15 +631,14 @@ class CustomerDatabaseController extends Controller
                 'success' => true,
                 'message' => 'OAT customer berhasil dihapus',
                 'data' => [
-                    'id' => $id,
-                    'cust_id' => $existingData->cust_id,
-                    'deleted_at' => now()->format('Y-m-d H:i:s')
+                    'id' => (int) $id,
+                    'cust_id' => $custId
                 ]
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error soft deleting OAT customer', [
+            Log::error('Error deleting OAT customer', [
                 'id' => $id,
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),

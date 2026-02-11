@@ -7,7 +7,7 @@
 <body style="font-family: Arial, sans-serif;">
     <div style="max-width:600px;margin:0 auto;padding:40px 20px;background:#fff;">
         <div style="text-align:left;">
-            <img src="https://is3.cloudhost.id/bensinkustorage/logo/mina-marret-logo.png" alt="Logo" style="height:40px;">
+            <img src="{{ $storage_url }}/logo/mina-marret-logo.png" alt="Logo" style="height:40px;">
         </div>
         <h2 style="margin-top:40px;">Hi Admin Support,</h2>
         <p>Password user telah direset oleh administrator. <br> Berikut adalah detail reset password yang telah dilakukan.</p>

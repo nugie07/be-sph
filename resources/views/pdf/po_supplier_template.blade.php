@@ -89,7 +89,7 @@
         <table class="table-no-border">
             <tr>
                 <td style="width: 20%; text-align: center; vertical-align: top;">
-                    <img src="https://is3.cloudhost.id/bensinkustorage/logo/mina-marret-logo.png" alt="Company Logo" style="height: 50px; margin-bottom: 5px;">
+                    <img src="{{ $storage_url }}/logo/mina-marret-logo.png" alt="Company Logo" style="height: 50px; margin-bottom: 5px;">
                      <p style="font-size:8px; text-align:center; font-weight:bold; line-height: 1.2;">PT. MINA MARRET TRANS<br>ENERGI INDONESIA</p>
                 </td>
                 <td style="width: 45%; vertical-align: top; padding-left:10px;">
@@ -282,7 +282,7 @@
                 <td style="width: 30%; text-align:left;">
                     <p class="footer-title">Authorized by</p>
                     <img style="height: 100px; width:auto; object-fit:contain; margin-bottom: 5px;"
-                    src="https://is3.cloudhost.id/bensinkustorage/logo/mina.png"
+                    src="{{ $storage_url }}/logo/mina.png"
                     alt=""
                 />
                     <p class="footer-name" style="margin-top: 0;">Minasari Mingna</p>

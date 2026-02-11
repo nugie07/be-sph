@@ -46,6 +46,17 @@ public function index(Request $request)
                 $query->where('type', $type);
             }
 
+            // Filter by invoice_date
+            if ($request->filled('invoice_date')) {
+                $query->whereDate('invoice_date', $request->invoice_date);
+            }
+            if ($request->filled('invoice_date_from')) {
+                $query->whereDate('invoice_date', '>=', $request->invoice_date_from);
+            }
+            if ($request->filled('invoice_date_to')) {
+                $query->whereDate('invoice_date', '<=', $request->invoice_date_to);
+            }
+
             // Ambil semua invoices dulu
             $invoices = $query->orderBy('id', 'desc')->get();
 
@@ -689,15 +700,15 @@ public function store(Request $request)
                 $filePath = 'invoices_receipt/' . $fileName;
 
                 // Check if storage disk exists
-                if (!Storage::disk('idcloudhost')) {
+                if (!Storage::disk('byteplus')) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Storage disk idcloudhost not configured'
+                        'message' => 'Storage disk byteplus not configured'
                     ], 500);
                 }
 
-                // Upload file to idcloudhost
-                $uploaded = Storage::disk('idcloudhost')->put($filePath, file_get_contents($file));
+                // Upload file to byteplus
+                $uploaded = Storage::disk('byteplus')->put($filePath, file_get_contents($file));
 
                 if (!$uploaded) {
                     return response()->json([
@@ -707,7 +718,7 @@ public function store(Request $request)
                 }
 
                 // Generate full public URL
-                $fullUrl = 'https://is3.cloudhost.id/bensinkustorage/' . $filePath;
+                $fullUrl = byteplus_url($filePath);
 
                 // Update Invoice with payment information
                 $invoice->payment_date = $validated['payment_date'];
@@ -722,7 +733,7 @@ public function store(Request $request)
                     'payment_date' => $validated['payment_date'],
                     'receipt_number' => $validated['receipt_number'],
                     'file_path' => $filePath,
-                    'file_size' => Storage::disk('idcloudhost')->size($filePath)
+                    'file_size' => Storage::disk('byteplus')->size($filePath)
                 ]);
 
                 return response()->json([

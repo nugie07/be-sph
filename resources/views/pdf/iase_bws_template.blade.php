@@ -98,27 +98,27 @@
     <div style="width: 100%; height: 100%;">
 
         <!-- Header -->
+        <!-- Top Centered Logo (IASE) -->
+        @php
+            $logoSrc = $storage_url . '/logo/iase_logo.png';
+        @endphp
+        <div style="text-align:center; margin-bottom: 0;">
+            @if(!empty($logoSrc))
+                <!-- FIX: Mengurangi tinggi logo agar tidak memakan banyak tempat -->
+                <img src="{{ $logoSrc }}" alt="Logo" style="height:85px; width:auto; object-fit:contain;">
+            @else
+                <div style="height:85px; width:180px; border:1px solid #ccc; display:inline-flex; align-items:center; justify-content:center; font-size:10px;">LOGO</div>
+            @endif
+        </div>
         <div class="header">
             <table>
                 <tr>
-                    <td width="12%" style="vertical-align:top;">
-                        @php
-                            $logoSrc = $storage_url . '/logo/mina-marret-logo.png';
-                        @endphp
-                        @if(!empty($logoSrc))
-                            <img src="{{ $logoSrc }}" alt="Logo" style="width:90px; height:auto; object-fit:contain; display:block; margin:0 auto;">
-                        @else
-                            <div style="width:90px;height:90px;border:1px solid #ccc;font-size:9px;display:flex;align-items:center;justify-content:center;">LOGO</div>
-                        @endif
-                    </td>
-                    <td width="88%" style="text-align:center; vertical-align:middle;">
-                        <h4>PT MINA MARRET TRANS ENERGI INDONESIA</h4>
-                        <p>AGEN BBM INDUSTRI</p>
-                        <small>
-                        Jenis Komoditi/ Produk: Solar HSD B40<br />
-                        World Capital Tower 5th Floor, Unit 01, Jl. Mega Kuningan Barat No. 3, Kec. Setiabudi, Jakarta Selatan 12950<br />
-                        Gagah Putera Satria Building Jl. KP Tendean No. 158 Banjarmasin, Kalimantan Selatan 70231<br />
-                        {{ $settings['Sub_Title_4'] ?? '' }}
+                    <td width="100%" style="text-align:center; vertical-align:middle;">
+                        <small style="font-size:11px; line-height:1.25;">
+                            Jenis Komoditi/ Produk: Solar HSD B40<br />
+                            World Capital Tower 5th Floor, Unit 01, Jl. Mega Kuningan Barat No. 3, Kec. Setiabudi, Jakarta Selatan 12950<br />
+                            Gagah Putera Satria Building Jl. KP Tendean No. 158 Banjarmasin, Kalimantan Selatan 70231<br />
+                            {{ $settings['Sub_Title_4'] ?? '' }}
                         </small>
                     </td>
                 </tr>
@@ -136,7 +136,8 @@
             <div style="margin-bottom: 15px;">
                 <p>Kepada</p>
                 <p>{{ $sph->comp_name }}</p>
-               
+                <p>Di Sumut</p>
+                <p>Up: {{ $sph->pic }}</p>
             </div>
             <div style="margin-bottom: 15px;">
                 <p>Dengan hormat,</p>
@@ -234,14 +235,16 @@
             <div class="remarks">
                 <span style="font-weight:bold;">Remarks:</span>
                 <ol>
-                    <li>Toleransi Susut {{ $sph->susut }} berdasarkan flowmeter yang telah di kalibrasi atau tinggi cairan truk tangki transportir yang telah di kalibrasi</li>
-                    <li>Harga berlaku dari <strong>{{ $sph->note_berlaku ?? '' }}</strong> </li>
-                    <li>Tanggung jawab MMTEI terhadap produk yang dikirim baik kuantitas maupun kualitas adalah sampai pada saat sebelum bongkar dimana produk masih berada di truk transportir MMTEI. Pelanggan berkewajiban mengambil sampel untuk disimpan dan memastikan produk dalam kondisi baik sebelum dibongkar</li>
-                    <li>Produk sesuai dengan spesifikasi berdasarkan SK Dirjen Migras no 170.K/HK.02/DJM/2023</li>
-                    <li>PO harap dapat dikirimkan ke e-mail {{ $email->useremail ?? '' }} dan {{ $settings['pbbkb_include_email2'] ?? '' }}</li>
-                    <li>Harga sewaktu waktu dapat berubah tanpa ada pemberitahuan terlebih dahulu></li>
+                <li>Toleransi Susut {{ $sph->susut }} % berdasarkan flowmeter yang telah di kalibrasi atau tinggi cairan truk tangki transportir yang sudah di kalibrasi</li>
+                    <li><strong>{{ $sph->note_berlaku ?? 'Harga Berlaku' }}</strong> </li>
+                    <li>Tanggung Jawab PT IASE terhadap product yang dikirim baik kuantitas maupun kualitas adalah sampai pada saat sebelum bongkar dimana produk masih berada di truk
+                        tangki transportir PT IASE . Pelanggan berkewajiban mengambil sampel untuk disimpan dan memastikan produk dalam kondisi baik sebelum dibongkar.
+                    </li>
+                    <li>Produk sesuai dengan spesifikasi berdasarkan SK Dirjen Migas No. {{ $settings['other_config']['pbbkb_include_sk'] ?? '' }}</li>
+                    <li>PO harap dapat diemailkan ke {{ $email->useremail ?? '' }} dan {{ $settings['pbbkb_include_email2'] ?? '' }}</li>
                     <li>Harap mencantumkan No Tagihan dan No PO pada bukti transfer anda sebagai bukti pembayaran yang sah</li>
-                    
+                    <li>Harga termasuk <strong>PBBKB</strong></li>
+                </ol>
                 </ol>
             </div>
             <p>Demikianlah proposal penawaran ini kami buat, bila ada pertanyaan mohon untuk menghubungi kami.</p>

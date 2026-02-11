@@ -39,7 +39,7 @@
 	<table width="100%" cellspacing="0" cellpadding="0">
 		<tr>
 			<td style="text-align: center;">
-				<img src="https://is3.cloudhost.id/bensinkustorage/logo/iase_logo.png" alt="IASE Logo" style="height: 85px; width: auto;">
+				<img src="{{ $storage_url }}/logo/iase_logo.png" alt="IASE Logo" style="height: 85px; width: auto;">
 			</td>
 		</tr>
 		<tr>
@@ -311,7 +311,7 @@
 					</tr>
 					<tr>
 						<td style="text-align: center;">
-							<img src="https://is3.cloudhost.id/bensinkustorage/logo/cap_ttd_iase.png" style="width: 160px; height: auto;" />
+							<img src="{{ $storage_url }}/logo/cap_ttd_iase.png" style="width: 160px; height: auto;" />
 						</td>
 						<td>
 							<br />

@@ -205,7 +205,7 @@
                         </small>
                     </td>
                     <td width="10%">
-                        <img src="https://is3.cloudhost.id/bensinkustorage/logo/logo_iase.png"
+                        <img src="{{ $storage_url }}/logo/logo_iase.png"
                             alt="Company Logo" class="w-5 h-5 sm:w-5 sm:h-5 object-contain rounded-lg">
                     </td>
                 </tr>

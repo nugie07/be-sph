@@ -38,7 +38,7 @@
 	<table width="100%" cellspacing="0" cellpadding="0">
 		<tr>
 			<td width="15%" style="vertical-align: top; padding-right: 10px;">
-				<img src="https://is3.cloudhost.id/bensinkustorage/logo/mina-marret-logo.png" alt="Logo" style="width: 100px; height: auto;">
+				<img src="{{ $storage_url }}/logo/mina-marret-logo.png" alt="Logo" style="width: 100px; height: auto;">
 			</td>
 			<td width="85%" style="vertical-align: middle;">
 				<h2 style="margin: 0; padding: 0; font-size: 22px; font-weight: bold;">PT MINA MARRET TRANS ENERGI INDONESIA</h2>
@@ -309,7 +309,7 @@
 					</tr>
 					<tr>
 						<td style="text-align: center;">
-							<img src="https://is3.cloudhost.id/bensinkustorage/logo/cap_ttd_mmtei.png" style="width: 160px; height: auto;" />
+							<img src="{{ $storage_url }}/logo/cap_ttd_mmtei.png" style="width: 160px; height: auto;" />
 						</td>
 						<td>
 							<br />

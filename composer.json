@@ -15,6 +15,7 @@
         "maatwebsite/excel": "^3.1",
         "mailersend/laravel-driver": "^2.10",
         "milon/barcode": "^11.0",
+        "opcodesio/log-viewer": "^3.21",
         "spatie/laravel-permission": "^6.20"
     },
     "require-dev": {
@@ -34,6 +35,7 @@
         },
         "files": [
             "app/Helpers/ApiLogHelper.php",
+            "app/Helpers/StorageHelper.php",
             "app/Helpers/WorkflowHelper.php"
         ]   
         

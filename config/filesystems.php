@@ -48,6 +48,21 @@ return [
         'visibility' => 'public',
         ],
 
+        'byteplus' => [
+            'driver' => 's3',
+            'key' => env('TOS_ACCESS_KEY_ID'),
+            'secret' => env('TOS_SECRET_ACCESS_KEY'),
+            'region' => env('TOS_REGION', 'ap-southeast-3'),
+            'bucket' => env('TOS_BUCKET', 'sphminamaret'),
+            'endpoint' => env('TOS_ENDPOINT', 'https://tos-s3-ap-southeast-3.bytepluses.com'),
+            'use_path_style_endpoint' => false,
+            'url' => env('TOS_URL'),
+            'throw' => false,
+            // Jika bucket private: true = pakai presigned URL (link sementara). Jika bucket public: false = pakai URL langsung.
+            'use_presigned_url' => env('TOS_USE_PRESIGNED_URL', true),
+            'presigned_ttl_minutes' => env('TOS_PRESIGNED_TTL_MINUTES', 60),
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

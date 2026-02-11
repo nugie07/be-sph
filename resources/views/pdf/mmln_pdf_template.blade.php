@@ -217,7 +217,6 @@
             <p>Kepada</p>
             <p>{{ $sph->name_company }}</p>
             <p>Di Tempat</p>
-            <p>Up: {{ $sph->company_pic }}</p>
         </div>
         <div style="margin-bottom: 20px">
             <p>Dengan hormat,</p>

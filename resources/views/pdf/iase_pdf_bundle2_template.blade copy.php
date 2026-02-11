@@ -102,7 +102,7 @@
 
         <!-- Top Centered Logo (IASE) -->
         @php
-            $logoSrc = 'https://is3.cloudhost.id/bensinkustorage/logo/iase_logo.png';
+            $logoSrc = $storage_url . '/logo/iase_logo.png';
         @endphp
         <div style="text-align:center; margin-bottom: 0;">
             @if(!empty($logoSrc))
@@ -137,8 +137,7 @@
             <div style="margin-bottom: 4px;"> <!-- lebih rapat jarak block 'Kepada' -->
                 <p>Kepada</p>
                 <p>{{ $sph->comp_name }}</p>
-                <p>Di Sumut</p>
-                <p>Up: {{ $sph->pic }}</p>
+               
             </div>
             <div style="margin-bottom: 6px;"> <!-- rapatkan -->
                <br> <p>Dengan hormat,</p>

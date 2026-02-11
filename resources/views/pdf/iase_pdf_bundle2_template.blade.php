@@ -102,7 +102,7 @@
 
         <!-- Top Centered Logo (IASE) -->
         @php
-            $logoSrc = 'https://is3.cloudhost.id/bensinkustorage/logo/iase_logo.png';
+            $logoSrc = $storage_url . '/logo/iase_logo.png';
         @endphp
         <div style="text-align:center; margin-bottom: 0;">
             @if(!empty($logoSrc))
@@ -117,6 +117,7 @@
                 <tr>
                     <td width="100%" style="text-align:center; vertical-align:middle;">
                         <small style="font-size:11px; line-height:1.25;">
+                            Jenis Komoditi/ Produk: Solar HSD B40<br />
                             World Capital Tower 5th Floor, Unit 01, Jl. Mega Kuningan Barat No. 3, Kec. Setiabudi, Jakarta Selatan 12950<br />
                             Gagah Putera Satria Building Jl. KP Tendean No. 158 Banjarmasin, Kalimantan Selatan 70231<br />
                             {{ $settings['Sub_Title_4'] ?? '' }}
@@ -410,7 +411,7 @@
             </div>
             </td>
             <!-- Kolom Logo dan ISO (disejajarkan ke kanan) -->
-            <!-- <td style="width:40%; vertical-align:bottom; text-align:right;">
+            <td style="width:40%; vertical-align:bottom; text-align:right;">
                 <div style="display:inline-flex; align-items:center; justify-content:flex-end; gap:14px;">
 
                     <span style="display:inline-flex; align-items:center; gap:8px;">
@@ -419,20 +420,20 @@
                             $gmiSrc  = $gmiLogoBase64 ?? ($settings['other_config']['GMILogoBase64'] ?? null);
                         @endphp
                         @if(!empty($asibSrc))
-                            <img src="{{ $asibSrc }}" alt="ASIB Logo" style="height:57px;width:auto;display:block;">
+                            <img src="{{ $asibSrc }}" alt="ASIB Logo" style="height:52px;width:auto;display:block;">
                         @endif
                         @if(!empty($gmiSrc))
-                            <img src="{{ $gmiSrc }}" alt="GMI Logo" style="height:57px;width:auto;display:block;">
+                            <img src="{{ $gmiSrc }}" alt="GMI Logo" style="height:52px;width:auto;display:block;">
                         @endif
                     </span>
 
-                    <span style="display:inline-block; font-size:8.5px; line-height:1.25; text-align:left; white-space:nowrap; position:relative; top:-18px;">
+                    <span style="display:inline-block; font-size:9px; line-height:1.25; text-align:left; white-space:nowrap; position:relative; top:-25px;">
                         <span style="display:block; margin:0;">ISO 9001 : 2015 No. GMIQ2311099</span>
                         <span style="display:block; margin:0;">ISO 14001 : 2015 No. GMIE2311100</span>
                         <span style="display:block; margin:0;">ISO 45001 : 2018 No. GMIO2311101</span>
                     </span>
                 </div>
-            </td> -->
+            </td>
             </tr>
             </table>
         </div>

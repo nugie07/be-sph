@@ -135,7 +135,7 @@
                 <tr>
                     <td width="12%" style="vertical-align:top;">
                     @php
-                            $logoSrc = 'https://is3.cloudhost.id/bensinkustorage/logo/mina-marret-logo.png';
+                            $logoSrc = $storage_url . '/logo/mina-marret-logo.png';
                         @endphp
                         @if(!empty($logoSrc))
                             <img src="{{ $logoSrc }}" alt="Logo" style="width:90px; height:auto; object-fit:contain; display:block; margin:0 auto;">
@@ -172,10 +172,7 @@
                 <p>PT Kutai Mineral</p>
                 <p>Sahid Sudirman Tower</p>
                 <p>Jakarta Pusat</p>
-                <!-- <p>Kepada</p>
-                <p>{{ $sph->comp_name }}</p>
-                <p>Di Sumut</p>
-                <p>Up: {{ $sph->pic }}</p> -->
+              
             </div>
             <div style="margin-bottom: 15px;">
                 <p>Dengan hormat,</p>

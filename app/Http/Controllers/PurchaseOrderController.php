@@ -689,22 +689,22 @@ public function generatePDF($poId)
 
             Log::info('Attempting to save PDF to storage', [
                 'pdf_path' => $pdfPath,
-                'storage_disk' => 'idcloudhost'
+                'storage_disk' => 'byteplus'
             ]);
 
             // Check if storage disk exists
-            if (!Storage::disk('idcloudhost')) {
-                Log::error('Storage disk idcloudhost not found');
+            if (!Storage::disk('byteplus')) {
+                Log::error('Storage disk byteplus not found');
                 return response()->json([
                     'success' => false,
-                    'error' => 'Storage disk idcloudhost not configured'
+                    'error' => 'Storage disk byteplus not configured'
                 ], 500);
             }
 
             $pdfContent = $pdf->output();
             Log::info('PDF content generated', ['content_size' => strlen($pdfContent)]);
 
-            $saved = Storage::disk('idcloudhost')->put($pdfPath, $pdfContent);
+            $saved = Storage::disk('byteplus')->put($pdfPath, $pdfContent);
 
             if (!$saved) {
                 Log::error('Failed to save PDF to storage', ['pdf_path' => $pdfPath]);
@@ -717,7 +717,7 @@ public function generatePDF($poId)
             Log::info('PDF saved to storage successfully', ['pdf_path' => $pdfPath]);
 
             // Generate full public URL
-            $fullUrl = 'https://is3.cloudhost.id/bensinkustorage/' . $pdfPath;
+            $fullUrl = byteplus_url($pdfPath);
 
             Log::info('Purchase Order PDF Generated Successfully', [
                 'po_id' => $po->id,
@@ -725,7 +725,7 @@ public function generatePDF($poId)
                 'template' => $template,
                 'pdf_path' => $pdfPath,
                 'full_url' => $fullUrl,
-                'file_size' => Storage::disk('idcloudhost')->size($pdfPath)
+                'file_size' => Storage::disk('byteplus')->size($pdfPath)
             ]);
 
             return response()->json([
@@ -993,15 +993,15 @@ public function listPayment(Request $request)
                 $filePath = 'po_receipts/' .$fileName;
 
                 // Check if storage disk exists
-                if (!Storage::disk('idcloudhost')) {
+                if (!Storage::disk('byteplus')) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Storage disk idcloudhost not configured'
+                        'message' => 'Storage disk byteplus not configured'
                     ], 500);
                 }
 
-                // Upload file to idcloudhost
-                $uploaded = Storage::disk('idcloudhost')->put($filePath, file_get_contents($file));
+                // Upload file to byteplus
+                $uploaded = Storage::disk('byteplus')->put($filePath, file_get_contents($file));
 
                 if (!$uploaded) {
                     return response()->json([
@@ -1011,7 +1011,7 @@ public function listPayment(Request $request)
                 }
 
                 // Generate full public URL
-                $fullUrl = 'https://is3.cloudhost.id/bensinkustorage/' . $filePath;
+                $fullUrl = byteplus_url($filePath);
 
                 // Update PO with payment information
                 $po->payment_date = $validated['payment_date'];
@@ -1026,7 +1026,7 @@ public function listPayment(Request $request)
                     'payment_date' => $validated['payment_date'],
                     'receipt_number' => $validated['receipt_number'],
                     'file_path' => $filePath,
-                    'file_size' => Storage::disk('idcloudhost')->size($filePath)
+                    'file_size' => Storage::disk('byteplus')->size($filePath)
                 ]);
 
                 return response()->json([
@@ -1353,7 +1353,7 @@ public function listPayment(Request $request)
                     'susut' => $dataTrxSph->susut,
                     'note_berlaku' => $dataTrxSph->note_berlaku,
                     'status' => $dataTrxSph->status,
-                    'file_sph' => $dataTrxSph->file_sph,
+                    'file_sph' => $dataTrxSph->file_sph ? byteplus_url($dataTrxSph->file_sph) : null,
                     'created_by' => $dataTrxSph->created_by,
                     'created_by_id' => $dataTrxSph->created_by_id,
                     'last_updateby' => $dataTrxSph->last_updateby,

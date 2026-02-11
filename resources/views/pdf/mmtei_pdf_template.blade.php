@@ -135,7 +135,7 @@
                 <tr>
                     <td width="12%" style="vertical-align:top;">
                     @php
-                            $logoSrc = 'https://is3.cloudhost.id/bensinkustorage/logo/mina-marret-logo.png';
+                            $logoSrc = $storage_url . '/logo/mina-marret-logo.png';
                         @endphp
                         @if(!empty($logoSrc))
                             <img src="{{ $logoSrc }}" alt="Logo" style="width:90px; height:auto; object-fit:contain; display:block; margin:0 auto;">
@@ -147,10 +147,10 @@
                         <h4>PT MINA MARRET TRANS ENERGI INDONESIA</h4>
                         <p>AGEN BBM INDUSTRI</p>
                         <small>
-                            Jenis Komoditi/ Produk: {{ $settings['header_komoditi_produk_mmtei'] ?? '' }}<br />
-                            World Capital Tower 5th Floor, Unit 01, Jl. Mega Kuningan Barat No. 3, Kec. Setiabudi, Jakarta Selatan 12950<br />
-                            Gagah Putera Satria Building Jl. KP Tendean No. 158 Banjarmasin, Kalimantan Selatan 70231<br />
-                            {{ $settings['Sub_Title_4'] ?? '' }}
+                        Jenis Komoditi/ Produk: Solar HSD B40<br />
+                        World Capital Tower 5th Floor, Unit 01, Jl. Mega Kuningan Barat No. 3, Kec. Setiabudi, Jakarta Selatan 12950<br />
+                        Gagah Putera Satria Building Jl. KP Tendean No. 158 Banjarmasin, Kalimantan Selatan 70231<br />
+                        {{ $settings['Sub_Title_4'] ?? '' }}
                         </small>
                     </td>
                 </tr>
@@ -168,8 +168,7 @@
             <div style="margin-bottom: 15px;">
                 <p>Kepada</p>
                 <p>{{ $sph->comp_name }}</p>
-                <p>Di Sumut</p>
-                <p>Up: {{ $sph->pic }}</p>
+                
             </div>
             <div style="margin-bottom: 15px;">
                 <p>Dengan hormat,</p>
@@ -273,15 +272,14 @@
             <div class="remarks">
                 <span style="font-weight:bold;">Remarks:</span>
                 <ol>
-                    <li>{{ $settings['Remark_1'] ?? '' }}</li>
-                    <li>{{ $settings['Remark_2'] ?? '' }}</li>
-                    <li>{{ $settings['Remark_3'] ?? '' }}</li>
-                    <li>{{ $settings['Remark_4'] ?? '' }}</li>
-                    <li>{{ $settings['Remark_5'] ?? '' }}</li>
-                    <li>{{ $settings['Remark_6'] ?? '' }}</li>
-                    <li>{{ $settings['Remark_7'] ?? '' }}</li>
-                    <li>{{ $sph->note_berlaku }}</li>
-                    <li>Toleransi Susut {{ $sph->susut }} % {{ $settings['Remark_9'] ?? '' }}</li>
+                    <li>Toleransi Susut {{ $sph->susut }} berdasarkan flowmeter yang telah di kalibrasi atau tinggi cairan truk tangki transportir yang telah di kalibrasi</li>
+                    <li>Harga berlaku dari <strong>{{ $sph->note_berlaku ?? '' }}</strong> </li>
+                    <li>Tanggung jawab MMTEI terhadap produk yang dikirim baik kuantitas maupun kualitas adalah sampai pada saat sebelum bongkar dimana produk masih berada di truk transportir MMTEI. Pelanggan berkewajiban mengambil sampel untuk disimpan dan memastikan produk dalam kondisi baik sebelum dibongkar</li>
+                    <li>Produk sesuai dengan spesifikasi berdasarkan SK Dirjen Migras no 170.K/HK.02/DJM/2023</li>
+                    <li>PO harap dapat dikirimkan ke e-mail {{ $email->useremail ?? '' }} dan {{ $settings['pbbkb_include_email2'] ?? '' }}</li>
+                    <li>Harga sewaktu waktu dapat berubah tanpa ada pemberitahuan terlebih dahulu></li>
+                    <li>Harap mencantumkan No Tagihan dan No PO pada bukti transfer anda sebagai bukti pembayaran yang sah</li>
+                    
                 </ol>
             </div>
             <p>Demikianlah proposal penawaran ini kami buat, bila ada pertanyaan mohon untuk menghubungi kami.</p>
@@ -296,8 +294,7 @@
             <td style="width:60%; vertical-align:bottom;">
             <div>
             Salam Sukses,<br><br><br><br>
-            <span style="font-weight:bold;">{{ $settings['other_config']['Footer_1'] ?? '' }}</span><br>
-            HP: {{ $settings['other_config']['Footer_2'] ?? '' }}
+            <span style="font-weight:bold;">{{ $email->first_name ?? '' }} {{ $email->last_name ?? '' }}</span>
             </div>
             </td>
             <!-- Kolom Logo dan ISO (disejajarkan ke kanan) -->

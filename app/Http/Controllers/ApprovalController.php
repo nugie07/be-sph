@@ -127,7 +127,7 @@ public function getApprovalDetails(Request $request)
         try {
                                     // SPH Approval Details
             $sphItems = DataTrxSph::where('status', 1)
-                ->select('id', 'tipe_sph', 'kode_sph', 'comp_name', 'product', 'price_liter', 'ppn', 'pbbkb', 'total_price', 'pay_method', 'susut', 'note_berlaku', 'oat', 'ppn_oat', 'oat_lokasi', 'created_at', 'created_by', 'template_id')
+                ->select('id', 'tipe_sph', 'kode_sph', 'comp_name', 'product', 'price_liter', 'ppn', 'pbbkb', 'total_price', 'pay_method', 'susut', 'note_berlaku', 'oat', 'ppn_oat', 'oat_lokasi', 'created_at', 'created_by', 'template_id', 'file_sph')
                 ->orderBy('created_at', 'desc')
                 ->get();
 
@@ -183,7 +183,7 @@ public function getApprovalDetails(Request $request)
                         'template_id' => $item->template_id,
                         'template_form' => $templateFormById->get($item->template_id) ?? $templateFormById->get((string) $item->template_id) ?? null,
                         'details' => ($detailsBySphId->get($item->id) ?? collect())->values(),
-                        'temp_file' => $tempSph ? ($tempSph->temp_link ?? null) : null,
+                        'temp_file' => $tempSph && $tempSph->temp_link ? byteplus_url($tempSph->temp_link) : (!empty($item->file_sph) ? byteplus_url($item->file_sph) : null),
                     ];
                 });
 
@@ -549,22 +549,22 @@ public function verifyInvoice(Request $request, $trx_id)
 
             Log::info('Attempting to save PDF to storage', [
                 'pdf_path' => $pdfPath,
-                'storage_disk' => 'idcloudhost'
+                'storage_disk' => 'byteplus'
             ]);
 
             // Check if storage disk exists
-            if (!Storage::disk('idcloudhost')) {
-                Log::error('Storage disk idcloudhost not found');
+            if (!Storage::disk('byteplus')) {
+                Log::error('Storage disk byteplus not found');
                 return response()->json([
                     'success' => false,
-                    'error' => 'Storage disk idcloudhost not configured'
+                    'error' => 'Storage disk byteplus not configured'
                 ], 500);
             }
 
             $pdfContent = $pdf->output();
             Log::info('PDF content generated', ['content_size' => strlen($pdfContent)]);
 
-            $saved = Storage::disk('idcloudhost')->put($pdfPath, $pdfContent);
+            $saved = Storage::disk('byteplus')->put($pdfPath, $pdfContent);
 
             if (!$saved) {
                 Log::error('Failed to save PDF to storage', ['pdf_path' => $pdfPath]);
@@ -577,7 +577,7 @@ public function verifyInvoice(Request $request, $trx_id)
             Log::info('PDF saved to storage successfully', ['pdf_path' => $pdfPath]);
 
             // Generate full public URL
-            $fullUrl = 'https://is3.cloudhost.id/bensinkustorage/' . $pdfPath;
+            $fullUrl = byteplus_url($pdfPath);
 
             Log::info('Invoice PDF Generated Successfully', [
                 'invoice_id' => $invoice->id,
@@ -585,7 +585,7 @@ public function verifyInvoice(Request $request, $trx_id)
                 'template' => $template,
                 'pdf_path' => $pdfPath,
                 'full_url' => $fullUrl,
-                'file_size' => Storage::disk('idcloudhost')->size($pdfPath)
+                'file_size' => Storage::disk('byteplus')->size($pdfPath)
             ]);
 
             return response()->json([

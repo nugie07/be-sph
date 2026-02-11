@@ -323,17 +323,17 @@ public function show($id)
             ]);
 
             // Check if storage disk exists
-            if (!Storage::disk('idcloudhost')) {
-                Log::error('Storage disk idcloudhost not found for DN PDF');
+            if (!Storage::disk('byteplus')) {
+                Log::error('Storage disk byteplus not found for DN PDF');
                 return [
                     'success' => false,
-                    'error' => 'Storage disk idcloudhost tidak dikonfigurasi'
+                    'error' => 'Storage disk byteplus tidak dikonfigurasi'
                 ];
             }
 
             // Save PDF to storage
             $pdfContent = $pdf->output();
-            $saved = Storage::disk('idcloudhost')->put($filePath, $pdfContent);
+            $saved = Storage::disk('byteplus')->put($filePath, $pdfContent);
 
             if (!$saved) {
                 Log::error('Failed to save Delivery Note PDF to storage', [
@@ -347,14 +347,14 @@ public function show($id)
             }
 
             // Generate full public URL
-            $fullUrl = 'https://is3.cloudhost.id/bensinkustorage/' . $filePath;
+            $fullUrl = byteplus_url($filePath);
 
             Log::info('Delivery Note PDF generated and saved successfully', [
                 'delivery_note_id' => $note->id,
                 'dn_no' => $note->dn_no,
                 'file_path' => $filePath,
                 'pdf_url' => $fullUrl,
-                'file_size' => Storage::disk('idcloudhost')->size($filePath)
+                'file_size' => Storage::disk('byteplus')->size($filePath)
             ]);
 
             return [
@@ -561,16 +561,16 @@ public function uploadBast(Request $request)
                 $filePath = 'bast/' . $fileName;
 
                 // Check if storage disk exists
-                if (!Storage::disk('idcloudhost')) {
+                if (!Storage::disk('byteplus')) {
                     DB::rollBack();
                     return response()->json([
                         'success' => false,
-                        'message' => 'Storage disk idcloudhost not configured'
+                        'message' => 'Storage disk byteplus not configured'
                     ], 500);
                 }
 
-                // Upload file to idcloudhost
-                $uploaded = Storage::disk('idcloudhost')->put($filePath, file_get_contents($file));
+                // Upload file to byteplus
+                $uploaded = Storage::disk('byteplus')->put($filePath, file_get_contents($file));
 
                 if (!$uploaded) {
                     DB::rollBack();
@@ -585,7 +585,7 @@ public function uploadBast(Request $request)
                 }
 
                 // Generate full public URL
-                $fullUrl = 'https://is3.cloudhost.id/bensinkustorage/' . $filePath;
+                $fullUrl = byteplus_url($filePath);
                 $note->file = $fullUrl;
 
                 Log::info('BAST file uploaded successfully', [

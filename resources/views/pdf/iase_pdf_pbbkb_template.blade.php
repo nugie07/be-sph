@@ -85,7 +85,7 @@
 
         <!-- Top Centered Logo (IASE) -->
         @php
-            $logoSrc = 'https://is3.cloudhost.id/bensinkustorage/logo/iase_logo.png';
+            $logoSrc = $storage_url . '/logo/iase_logo.png';
         @endphp
         <div style="text-align:center; margin-bottom: 5px;">
             @if(!empty($logoSrc))
@@ -100,9 +100,10 @@
                 <tr>
                     <td width="100%" style="text-align:center; vertical-align:middle;">
                         <small style="font-size:13px;">
-                            World Capital Tower 5th Floor, Unit 01, Jl. Mega Kuningan Barat No. 3, Kec. Setiabudi, Jakarta Selatan 12950<br />
-                            Gagah Putera Satria Building Jl. KP Tendean No. 158 Banjarmasin, Kalimantan Selatan 70231<br />
-                            {{ $settings['Sub_Title_4'] ?? '' }}
+                        Jenis Komoditi/ Produk: Solar HSD B40<br />
+                        World Capital Tower 5th Floor, Unit 01, Jl. Mega Kuningan Barat No. 3, Kec. Setiabudi, Jakarta Selatan 12950<br />
+                        Gagah Putera Satria Building Jl. KP Tendean No. 158 Banjarmasin, Kalimantan Selatan 70231<br />
+                        {{ $settings['Sub_Title_4'] ?? '' }}
                         </small>
                     </td>
                 </tr>
@@ -120,8 +121,7 @@
             <div style="margin-bottom: 15px;">
                 <p>Kepada</p>
                 <p>{{ $sph->comp_name }}</p>
-                <p>Di Sumut</p>
-                <p>Up: {{ $sph->pic }}</p>
+                
             </div>
             <div style="margin-bottom: 15px;">
                 <p>Dengan hormat,</p>
@@ -178,12 +178,16 @@
             <div class="remarks">
                 <span style="font-weight:bold;">Remarks:</span>
                 <ol>
-                    <li>Toleransi Susut {{ $sph->susut }} (Standard Pengukuran menggunakan Sounding)</li>
-                    <li>Harga include OAT ke Lokasi Site Kerja <strong>{{ $sph->oat_lokasi ?? '' }}</strong> </li>
+                    <li>Toleransi Susut {{ $sph->susut }} % berdasarkan flowmeter yang telah di kalibrasi atau tinggi cairan truk tangki transportir yang sudah di kalibrasi</li>
+                    <li><strong>{{ $sph->note_berlaku ?? 'Harga Berlaku' }}</strong> </li>
+                    <li>Tanggung Jawab PT IASE terhadap product yang dikirim baik kuantitas maupun kualitas adalah sampai pada saat sebelum bongkar dimana produk masih berada di truk
+                        tangki transportir PT IASE . Pelanggan berkewajiban mengambil sampel untuk disimpan dan memastikan produk dalam kondisi baik sebelum dibongkar.
+                    </li>
                     <li>Produk sesuai dengan spesifikasi berdasarkan SK Dirjen Migas No. {{ $settings['other_config']['pbbkb_include_sk'] ?? '' }}</li>
-                    <li>PO harap dapat diemailkan ke {{ $settings['pbbkb_include_email1'] ?? '' }} dan {{ $settings['pbbkb_include_email2'] ?? '' }}</li>
+                    <li>PO harap dapat diemailkan ke {{ $email->useremail ?? '' }} dan {{ $settings['pbbkb_include_email2'] ?? '' }}</li>
+                    <li>Harga sewaktu waktu dapat berubah tanpa ada pemberitahuan terlebih dahulu</li>
                     <li>Harap mencantumkan No Tagihan dan No PO pada bukti transfer anda sebagai bukti pembayaran yang sah</li>
-                    <li>Harga termasuk <strong>PBBKB</strong></li>
+                    
                 </ol>
             </div>
             <p>Demikianlah proposal penawaran ini kami buat, bila ada pertanyaan mohon untuk menghubungi kami.</p>
