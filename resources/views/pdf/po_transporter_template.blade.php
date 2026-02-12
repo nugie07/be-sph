@@ -267,27 +267,27 @@
                 <td style="align-items: center; text-align:center">
                     <p class="footer-title">Reqeusted By</p>
                 <img style="height: 100px; width:auto; object-fit:contain;"
-                    src="{{ $storage_url }}/logo/aris_sign.png"
+                    src="{{ $storage_url }}/logo/ramadan.png"
                     alt=""
                 />
-                <p class="footer-name">Aris</p>
+                <p class="footer-name">M. Ramadan</p>
                 </td>
                 <td style="align-items: center; text-align:center">
                     <p class="footer-title">Prepare By</p>
                 <img style="height: 100px; width:auto; object-fit:contain;"
-                    src="{{ $storage_url }}/logo/rachman_sign.png"
+                    src="{{ $storage_url }}/logo/maulidya.png"
                     alt=""
                 />
-                <p class="footer-name">Rachman</p>
+                <p class="footer-name">Maulidya Dita Iswana</p>
                 </td>
                 <td></td>
                 <td style="align-items: center; text-align:center" >
                     <p class="footer-title">Authorized By</p>
                     <img style="height: 100px; width:auto; object-fit:contain;"
-                        src="{{ $storage_url }}/logo/tantry_sign.png"
+                        src="{{ $storage_url }}/logo/rudyanto.png"
                         alt=""
                     />
-                    <p class="footer-name">Tantry Wahyuni </p></td>
+                    <p class="footer-name">Rudiyanto </p></td>
             </tr>
         </table>
     </body>
