@@ -593,6 +593,10 @@ public function list(Request $request)
             $sph->template_form = $templateFormById->get($sph->template_id)
                 ?? $templateFormById->get((string) $sph->template_id)
                 ?? null;
+            // file_sph di response sebagai full URL (sama seperti temp_file di approval/details)
+            if (!empty($sph->file_sph) && !str_starts_with($sph->file_sph, 'http')) {
+                $sph->file_sph = byteplus_url($sph->file_sph);
+            }
             return $sph;
         });
 
@@ -1207,10 +1211,11 @@ public function generatePdf($id)
         $settings['other_config']['GMILogoBase64']  = $gmiLogoBase64;
 
         // Data customers (OAT) – sesuai struktur table baru
+        // Penting: filter c.id = $sph->id agar tidak duplikat ketika ada banyak SPH dengan comp_name sama
         $customers = DB::table('oat_customer as a')
             ->leftJoin('master_customer as b', 'b.id', '=', 'a.cust_id')
             ->leftJoin('data_trx_sph as c', 'c.comp_name', '=', 'b.name')
-            ->where('c.comp_name', $sph->comp_name)
+            ->where('c.id', $sph->id)
             ->select('a.location', 'a.qty', 'a.oat')
             ->get();
 
@@ -1477,10 +1482,11 @@ public function generatePdf($id)
         $settings['other_config']['GMILogoBase64']  = $gmiLogoBase64;
 
         // Data customers (OAT) – sesuai struktur table baru
+        // Penting: filter c.id = $sph->id agar tidak duplikat ketika ada banyak SPH dengan comp_name sama
         $customers = DB::table('oat_customer as a')
             ->leftJoin('master_customer as b', 'b.id', '=', 'a.cust_id')
             ->leftJoin('data_trx_sph as c', 'c.comp_name', '=', 'b.name')
-            ->where('c.comp_name', $sph->comp_name)
+            ->where('c.id', $sph->id)
             ->select('a.location', 'a.qty', 'a.oat')
             ->get();
 
