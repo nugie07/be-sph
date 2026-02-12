@@ -829,7 +829,7 @@ public function send(Request $request)
 
         return response()->json([
             'success' => true,
-            'message' => 'PDF SPH sedang digenerate di background. Setelah selesai, file_sph dan temp file (preview) akan terupdate. Cek status di GET /api/sph/pdf-jobs?sph_id=' . $sphId,
+            'message' => 'PDF SPH sedang digenerate ulang,Silahakan Refresh browser untuk melihat perubahan',
             'sph_id' => $sphId,
             'pdf_job_id' => $jobId,
             'poll_url' => '/api/sph/pdf-jobs?sph_id=' . $sphId,

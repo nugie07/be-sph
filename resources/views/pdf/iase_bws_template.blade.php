@@ -136,8 +136,7 @@
             <div style="margin-bottom: 15px;">
                 <p>Kepada</p>
                 <p>{{ $sph->comp_name }}</p>
-                <p>Di Sumut</p>
-                <p>Up: {{ $sph->pic }}</p>
+               
             </div>
             <div style="margin-bottom: 15px;">
                 <p>Dengan hormat,</p>

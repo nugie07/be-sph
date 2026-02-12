@@ -78,7 +78,47 @@ sudo systemctl restart sph-api-queue
 
 ---
 
-## 3. Environment production
+## 3. Docker (queue worker di dalam container)
+
+Kalau aplikasi jalan di Docker, **PHP hanya ada di dalam container**. Supervisor di host tidak bisa memanggil `php`; worker harus jalan **di dalam container**.
+
+**Cara yang benar:** tambah satu **service** di Docker Compose yang hanya menjalankan `queue:work`. Docker yang menjaga proses (restart jika crash).
+
+Contoh penambahan di `docker-compose.yml` (sesuaikan nama service dan path):
+
+```yaml
+  # Service aplikasi (web/API) — yang sudah ada
+  # app:
+  #   build: ./backend
+  #   ...
+
+  # Service worker queue — tambahkan ini
+  sph-queue:
+    build: ./backend
+    # atau: image: your-registry/sph-api:latest
+    command: php artisan queue:work database --sleep=3 --tries=3 --max-time=3600
+    restart: unless-stopped
+    volumes:
+      - ./backend:/var/www/html
+    env_file: .env
+    depends_on:
+      - db
+```
+
+- Ganti `./backend` / `build` jika path atau Dockerfile Anda berbeda.
+- Pastikan service ini pakai **env dan koneksi DB** yang sama dengan app (lewat `env_file` / `environment`).
+- Setelah edit: `docker compose up -d --build` (atau `docker-compose up -d`). Service `sph-queue` akan jalan terus dan restart otomatis.
+
+**Stop worker di host:** kalau tadi Anda pakai Supervisor di host untuk queue, bisa dinonaktifkan agar tidak konflik:
+
+```bash
+sudo supervisorctl stop sph-api-worker:*
+# dan hapus/rename config di /etc/supervisor/conf.d/sph-api-worker.conf jika tidak dipakai
+```
+
+---
+
+## 4. Environment production
 
 Pastikan di `.env` production:
 
@@ -92,6 +132,7 @@ Pastikan di `.env` production:
 | Lingkungan   | Cara jalan |
 |-------------|------------|
 | Development | Manual: `php artisan queue:work` |
-| Production  | Supervisor atau systemd agar worker jalan terus + restart otomatis |
+| Production (VM/VPS) | Supervisor atau systemd di host |
+| Production (Docker) | Service terpisah di Docker Compose yang menjalankan `queue:work` di dalam container |
 
 Setelah config Supervisor/systemd, job PDF SPH (`GenerateSphPdfJob`) akan diproses di background tanpa perlu menjalankan `queue:work` manual.

@@ -12,19 +12,19 @@
 
         /* Mengatur font, ukuran, dan padding utama untuk body agar sesuai dengan kertas A4 */
         body {
-            font-family: Arial, Helvetica, sans-serif; /* Menggunakan font sans-serif standar */
+            font-family: Arial, Helvetica, sans-serif;
             background-color: #fff;
             margin: 0;
-            padding: 16px 26px; /* lebih rapat ke atas dan samping */
-            font-size: 11px; /* Diperkecil agar tabel muat dan rata */
-            line-height: 1.15;
+            padding: 12px 26px;
+            font-size: 11px;
+            line-height: 1.12;
         }
 
         /* Header Section */
         .header {
             border-bottom: 2px solid #000;
-            padding-bottom: 4px; /* lebih rapat */
-            margin-bottom: 5px;  /* lebih rapat */
+            padding-bottom: 3px;
+            margin-bottom: 3px;
         }
         .header table {
             width: 100%;
@@ -57,10 +57,10 @@
             font-size: 12px;
         }
         .content p {
-            margin-bottom: 3px; /* rapatkan antar baris paragraf */
+            margin-bottom: 2px;
         }
         .content table {
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
 
         .kmp-table {
@@ -80,17 +80,17 @@
             background-color: #f2f2f2;
         }
 
-        /* Remarks Section */
+        /* Remarks Section - rapatkan agar muat 1 halaman */
         .remarks {
-            margin-top: 10px;
+            margin-top: 4px;
         }
         .remarks ol {
-            padding-left: 20px; /* Mengurangi padding agar lebih rapi */
-            margin: 5px 0;
+            padding-left: 18px;
+            margin: 2px 0;
         }
         .remarks ol li {
-            margin-bottom: 2px;
-            line-height: 1.4;
+            margin-bottom: 1px;
+            line-height: 1.25;
         }
 
     </style>
@@ -106,8 +106,7 @@
         @endphp
         <div style="text-align:center; margin-bottom: 0;">
             @if(!empty($logoSrc))
-                <!-- FIX: Mengurangi tinggi logo agar tidak memakan banyak tempat -->
-                <img src="{{ $logoSrc }}" alt="Logo" style="height:85px; width:auto; object-fit:contain;">
+                <img src="{{ $logoSrc }}" alt="Logo" style="height:72px; width:auto; object-fit:contain;">
             @else
                 <div style="height:85px; width:180px; border:1px solid #ccc; display:inline-flex; align-items:center; justify-content:center; font-size:10px;">LOGO</div>
             @endif
@@ -138,8 +137,7 @@
             <div style="margin-bottom: 4px;"> <!-- lebih rapat jarak block 'Kepada' -->
                 <p>Kepada</p>
                 <p>{{ $sph->comp_name }}</p>
-                <p>Di Sumut</p>
-                <p>Up: {{ $sph->pic }}</p>
+              
             </div>
             <div style="margin-bottom: 6px;"> <!-- rapatkan -->
                <br> <p>Dengan hormat,</p>
@@ -375,7 +373,7 @@
                
 
             <!-- Payment & Remarks -->
-            <div style="margin-top: 10px;">
+            <div style="margin-top: 4px;">
                 <p style="font-weight:bold;">Payment: {{ $sph->pay_method }}</p>
                 <p>{{ $settings['Payment_info_1'] ?? '' }}</p>
                 <p>{{ $settings['Payment_info_2'] ?? '' }}</p>
@@ -399,40 +397,38 @@
             <p>Terima kasih atas perhatian dan kerjasamanya.</p>
         </div>
 
-        <!-- Footer Section -->
-        <div style="margin-top: 16px; width: 100%;">
+        <!-- Footer Section - rapatkan & logo kecil agar muat 1 halaman -->
+        <div style="margin-top: 6px; width: 100%;"><br><br><br>
             <table width="100%" style="border-collapse: collapse;">
             <tr>
-            <!-- Kolom Tanda Tangan -->
             <td style="width:60%; vertical-align:bottom;">
             <div>
-            Salam Sukses,<br><br><br><br>
+            Salam Sukses,<br><br><br>
             <span style="font-weight:bold;">{{ $email->first_name ?? '' }} {{ $email->last_name ?? '' }}</span>
             </div>
             </td>
-            <!-- Kolom Logo dan ISO (disejajarkan ke kanan) -->
             <td style="width:40%; vertical-align:bottom; text-align:right;">
-                <div style="display:inline-flex; align-items:center; justify-content:flex-end; gap:14px;">
-
-                    <span style="display:inline-flex; align-items:center; gap:8px;">
+                <table cellpadding="0" cellspacing="0" border="0" style="margin-left: auto;">
+                <tr>
+                    <td style="vertical-align: middle; padding-right: 8px;">
                         @php
-                            $asibSrc = $asibLogoBase64 ?? ($settings['other_config']['ASIBLogoBase64'] ?? null);
-                            $gmiSrc  = $gmiLogoBase64 ?? ($settings['other_config']['GMILogoBase64'] ?? null);
+                            $asibSrc = $asibLogoSrc ?? ($asibLogoBase64 ?? ($settings['other_config']['ASIBLogoBase64'] ?? null));
+                            $gmiSrc  = $gmiLogoSrc ?? ($gmiLogoBase64 ?? ($settings['other_config']['GMILogoBase64'] ?? null));
                         @endphp
                         @if(!empty($asibSrc))
-                            <img src="{{ $asibSrc }}" alt="ASIB Logo" style="height:52px;width:auto;display:block;">
+                            <img src="{{ $asibSrc }}" alt="ASIB Logo" style="height:40px;width:auto;display:block;">
                         @endif
                         @if(!empty($gmiSrc))
-                            <img src="{{ $gmiSrc }}" alt="GMI Logo" style="height:52px;width:auto;display:block;">
+                            <img src="{{ $gmiSrc }}" alt="GMI Logo" style="height:40px;width:auto;display:block;">
                         @endif
-                    </span>
-
-                    <span style="display:inline-block; font-size:9px; line-height:1.25; text-align:left; white-space:nowrap; position:relative; top:-25px;">
+                    </td>
+                    <td style="vertical-align: middle; font-size:8px; line-height:1.2; text-align:left;">
                         <span style="display:block; margin:0;">ISO 9001 : 2015 No. GMIQ2311099</span>
                         <span style="display:block; margin:0;">ISO 14001 : 2015 No. GMIE2311100</span>
                         <span style="display:block; margin:0;">ISO 45001 : 2018 No. GMIO2311101</span>
-                    </span>
-                </div>
+                    </td>
+                </tr>
+                </table>
             </td>
             </tr>
             </table>
