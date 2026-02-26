@@ -516,13 +516,27 @@ public function destroy($id)
     }
 
     // API untuk select DN No (otomatis isi data lain)
-public function dnSource()
+    // customer_name = nama PT (comp_name dari SPH), bukan PIC (purchase_order.nama)
+    public function dnSource()
     {
         $result = DB::select("
-            select dn_no, customer_po, nama as customer_name, tgl_po as po_date, 
-            created_at as arrival_date, delivery_to, qty, description, vendor_name as transportir, alamat
-            from purchase_order
-            where status = 4 and category = 2
+            SELECT
+                gr.kode_sph,
+                po.dn_no,
+                po.customer_po,
+                gr.nama_customer AS customer_name,
+                po.tgl_po AS po_date,
+                po.created_at AS arrival_date,
+                po.delivery_to,
+                po.qty,
+                po.description,
+                po.vendor_name AS transportir,
+                po.alamat
+            FROM purchase_order po
+            LEFT JOIN good_receipt gr ON gr.po_no = po.customer_po
+            LEFT JOIN data_trx_sph sph ON sph.kode_sph = gr.kode_sph
+                AND sph.id = (SELECT MAX(id) FROM data_trx_sph WHERE kode_sph = gr.kode_sph)
+            WHERE po.status = 4 AND po.category = 2 AND gr.kode_sph IS NOT NULL
         ");
         return response()->json($result);
     }

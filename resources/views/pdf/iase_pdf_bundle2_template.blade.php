@@ -390,6 +390,8 @@
                     <li>Produk sesuai dengan spesifikasi berdasarkan SK Dirjen Migas No. {{ $settings['other_config']['pbbkb_include_sk'] ?? '' }}</li>
                     <li>PO harap dapat diemailkan ke {{ $email->useremail ?? '' }} dan {{ $settings['pbbkb_include_email2'] ?? '' }}</li>
                     <li>Harap mencantumkan No Tagihan dan No PO pada bukti transfer anda sebagai bukti pembayaran yang sah</li>
+                    <li>Harga sewaktu waktu dapat berubah tanpa ada pemberitahuan terlebih dahulu</li>
+
                     <li>Harga termasuk <strong>PBBKB</strong></li>
                 </ol>
             </div>
@@ -423,9 +425,9 @@
                         @endif
                     </td>
                     <td style="vertical-align: middle; font-size:8px; line-height:1.2; text-align:left;">
-                        <span style="display:block; margin:0;">ISO 9001 : 2015 No. GMIQ2311099</span>
-                        <span style="display:block; margin:0;">ISO 14001 : 2015 No. GMIE2311100</span>
-                        <span style="display:block; margin:0;">ISO 45001 : 2018 No. GMIO2311101</span>
+                    <span style="display:block; margin:0;">ISO 9001 : 2015 No. GMIQ2511342</span>
+                        <span style="display:block; margin:0;">ISO 14001 : 2015 No. GMIE2511343</span>
+                        <span style="display:block; margin:0;">ISO 2018 : 2018 No. GMIH2511344</span>
                     </td>
                 </tr>
                 </table>

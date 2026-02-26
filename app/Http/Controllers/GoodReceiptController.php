@@ -52,8 +52,17 @@ public function list(Request $request)
             ])
             ->get();
 
+        // Konversi po_file ke full URL BytePlus (presigned) seperti di sph/list
+        $data = $data->map(function ($row) {
+            $arr = (array) $row;
+            if (!empty($arr['po_file']) && !str_starts_with((string) $arr['po_file'], 'http')) {
+                $arr['po_file'] = byteplus_url($arr['po_file']);
+            }
+            return $arr;
+        })->values();
+
         // Card summary
-       $total_po = DB::table('data_trx_sph')->where('status', 4)->count();
+        $total_po = DB::table('data_trx_sph')->where('status', 4)->count();
         $total_po_belum = $data->where('status', 0)->count();
         $total_po_terima = $data->where('status', 1)->count();
 
@@ -72,43 +81,45 @@ public function list(Request $request)
         ]);
     }
 
-public function detail(Request $request ,$po_id)
+public function detail(Request $request, $po_id)
     {
-         $result = AuthValidator::validateTokenAndClient($request);
-            if (!is_array($result) || !$result['status']) {
-                return $result;
-            }
-        $user = User::find($result['id']);
-        // Ambil good receipt beserta detailnya
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
         $gr = GoodReceipt::with('detail')->find($po_id);
         if (!$gr) {
             return response()->json(['message' => 'Data tidak ditemukan'], 404);
         }
 
-        // Ambil detaul SPH menurut SPH kode
-        $sphGr = DataTrxSph::where('kode_sph', $gr->kode_sph)->first();        if (!$sphGr){
-            return response()->json(['message' => ' Tidak ada data sph'],404);
-        }
-
         return response()->json([
+            'id'            => $gr->id,
             'kode_sph'      => $gr->kode_sph,
             'nama_customer' => $gr->nama_customer,
-            'po_file'       => $gr->po_file,
-            'created_at'    => $gr->created_at,
+            'po_no'         => $gr->po_no,
+            'no_seq'        => $gr->no_seq,
+            'wilayah'       => $gr->wilayah,
+            'req_date'      => $gr->req_date,
             'daily_seq'     => $gr->daily_seq,
-            'data_sph'      => [
-                'tipe_sph'     => $sphGr->tipe_sph,
-                'product'      => $sphGr->product,
-                'price_liter'  => $sphGr->price_liter,
-                'biaya_lokasi' => $sphGr->biaya_lokasi,
-                'ppn'          => $sphGr->ppn,
-                'pbbkb'        => $sphGr->pbbkb,
-                'total_price'  => $sphGr->total_price,
-                'pay_method'   => $sphGr->pay_method,
-                'note_berlaku' => $sphGr->note_berlaku,
-            ],
-            'items'         => $gr->detail->map(function($d){
+            'sub_total'     => $gr->sub_total,
+            'ppn'           => $gr->ppn,
+            'pbbkb'         => $gr->pbbkb,
+            'pph'           => $gr->pph,
+            'transport'     => $gr->transport,
+            'bypass'        => $gr->bypass,
+            'total'         => $gr->total,
+            'terbilang'     => $gr->terbilang,
+            'status'        => $gr->status,
+            'revisi_count'  => $gr->revisi_count,
+            'po_file'       => !empty($gr->po_file) ? byteplus_url($gr->po_file) : null,
+            'created_by'    => $gr->created_by,
+            'created_at'    => $gr->created_at,
+            'last_updateby' => $gr->last_updateby,
+            'updated_at'    => $gr->updated_at,
+            'items'         => $gr->detail->map(function ($d) {
                 return [
+                    'id'          => $d->id,
                     'nama_item'   => $d->nama_item,
                     'qty'         => $d->qty,
                     'per_item'    => $d->per_item,
@@ -155,10 +166,28 @@ public function update(Request $request, $po_id)
         DB::beginTransaction();
 
         try {
-            // 1) Update header good_receipt
             $gr = GoodReceipt::findOrFail($po_id);
 
-            // Backup data sebelum update ke table rev_good_receipt
+            // 1) Copy data good_receipt ke gr_revisi_log (sebelum update)
+            DB::table('gr_revisi_log')->insert([
+                'daily_seq'    => $gr->daily_seq,
+                'kode_sph'     => $gr->kode_sph,
+                'nama_customer'=> $gr->nama_customer,
+                'po_no'        => $gr->po_no,
+                'no_seq'       => $gr->no_seq,
+                'po_file'      => $gr->po_file,
+                'sub_total'    => $gr->sub_total,
+                'ppn'          => $gr->ppn,
+                'pbbkb'        => $gr->pbbkb,
+                'pph'          => $gr->pph,
+                'transport'    => $gr->transport ?? null,
+                'bypass'       => (bool) ($gr->bypass ?? false),
+                'total'        => $gr->total,
+                'terbilang'    => $gr->terbilang,
+                'created_by'   => $fullName,
+            ]);
+
+            // Backup ke rev_good_receipt jika ada po_file (backward compatibility)
             if ($gr->po_file) {
                 DB::table('rev_good_receipt')->insert([
                     'gr_id' => $gr->id,
@@ -167,6 +196,8 @@ public function update(Request $request, $po_id)
                     'updated_at' => now()
                 ]);
             }
+
+            // 2) Update header good_receipt (hanya po_file di-update bila FE kirim file)
             $gr->po_no     = $data['po_no'];
             $gr->no_seq    = $data['no_seq'] ?? null;
             $gr->sub_total = $data['sub_total'];
@@ -177,9 +208,8 @@ public function update(Request $request, $po_id)
             $gr->terbilang = $data['terbilang'];
             $gr->status    = $data['status'];
             $gr->last_updateby = $fullName;
-            $gr->revisi_count = $gr->revisi_count + 1; // Increment revisi count
+            $gr->revisi_count = $gr->revisi_count + 1;
 
-            // if file was uploaded, store it and update po_file
             if ($request->hasFile('file')) {
                 $path = $request->file('file')->store(
                     'good_receipt',
@@ -187,6 +217,7 @@ public function update(Request $request, $po_id)
                 );
                 $gr->po_file = $path;
             }
+            // Jika FE tidak kirim file, po_file tidak diubah (tetap nilai lama)
 
             $gr->save();
 
@@ -463,25 +494,20 @@ private function sendPoNotif($validated, $fileUrl = null)
     }
 
 
-public function viewPdf(Request $request ,$path)
+public function viewPdf(Request $request, $path)
     {
         $result = AuthValidator::validateTokenAndClient($request);
-            if (!is_array($result) || !$result['status']) {
-                return $result;
-            }
-        $user = User::find($result['id']);
-       // Jangan tambahkan lagi 'good_receipt/', path sudah lengkap!
-    if (!Storage::disk('byteplus')->exists($path)) {
-        abort(404, 'File not found');
-    }
-    $stream = Storage::disk('byteplus')->readStream($path);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
 
-    return response()->stream(function() use ($stream) {
-        fpassthru($stream);
-    }, 200, [
-        'Content-Type' => 'application/pdf',
-        'Content-Disposition' => 'inline; filename="'.basename($path).'"'
-    ]);
+        if (!Storage::disk('byteplus')->exists($path)) {
+            abort(404, 'File not found');
+        }
+
+        // Redirect ke URL BytePlus (presigned) agar PDF langsung buka dari TOS, aman & konsisten dengan sph/list
+        $url = byteplus_url($path);
+        return redirect($url);
     }
 
 public function tambahGr(Request $request)
@@ -823,9 +849,11 @@ public function revisi(Request $request, $id)
                 ]);
             }
 
-            // Update sequence berdasarkan wilayah dengan logika IASE atau non-IASE
-            if (!empty($data['wilayah'])) {
-                $this->updateSequenceByWilayah($gr->kode_sph, $data['wilayah']);
+            // Update sequence berdasarkan source dan wilayah (sama seperti flow update)
+            // Pakai source agar IASE selalu update DO_IASE_SEQ; kalau pakai wilayah saja,
+            // value "019" di DO_IASE_SEQ tidak mengandung "IASE" sehingga salah masuk DO_{wilayah}_SEQ
+            if (!empty($data['wilayah']) && !empty($data['source'])) {
+                $this->updateSequence($gr->kode_sph, $data['source'], $data['wilayah']);
             }
 
             DB::commit();

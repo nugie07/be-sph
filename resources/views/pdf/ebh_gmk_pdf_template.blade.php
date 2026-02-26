@@ -166,6 +166,7 @@
                 </tr>
             </table>
             <div style="margin-bottom: 15px;">
+                <p>PT Energi Batu Hitam</p>
                 <p>PT Indexim</p>
                 <p>PT Unggul Dinamika Utama</p>
                 <p>PT Bukit Baiduri Energi</p>

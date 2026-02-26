@@ -270,6 +270,7 @@
                         dan memastikan produk dalam kondisi baik sebelum dibongkar.</li>
                     <li>Produk sesuai dengan spesifikasi berdasarkan SK Dirjen Migas No. {{ $settings['other_config']['pbbkb_include_sk'] ?? '' }}</li>
                     <li>PO harap dapat diemailkan ke {{ $email->useremail ?? '' }} dan {{ $settings['pbbkb_include_email2'] ?? '' }}</li>
+                    <li>Harga sewaktu-waktu dapat berubah tanpa pemberitahuan terlebih dahulu.</li>
                     <li>Harap mencantumkan No Tagihan dan No PO pada bukti transfer anda sebagai bukti pembayaran yang sah</li>
                 </ol>
             </div>
