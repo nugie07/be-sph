@@ -1186,9 +1186,9 @@ public function listPayment(Request $request)
         }
 
         try {
-            // Query: SELECT id, po_no as customer_po FROM good_receipt
+            // Query: id, nama_customer, customer_po, wilayah dari good_receipt
             $data = DB::table('good_receipt')
-                ->select('id','nama_customer', DB::raw('po_no as customer_po'))
+                ->select('id', 'nama_customer', 'wilayah', DB::raw('po_no as customer_po'))
                 ->get();
 
             // Log aktivitas user
@@ -1232,7 +1232,7 @@ public function listPayment(Request $request)
                 ->where('status', 0)
                 ->where('bypass', 1)
                 ->where('po_no', $po_no)
-                ->select('id', 'po_no','no_seq','nama_customer')
+                ->select('id', 'po_no', 'no_seq', 'nama_customer', 'wilayah')
                 ->first();
 
             if ($check1) {
@@ -1253,7 +1253,7 @@ public function listPayment(Request $request)
                 ->leftJoin('purchase_order as po', 'po.customer_po', '=', 'gr.po_no')
                 ->where('gr.po_no', $po_no)
                 ->where('po.status', 4)
-                ->select('gr.id','gr.no_seq','gr.nama_customer', DB::raw('gr.po_no as customer_po'))
+                ->select('gr.id', 'gr.no_seq', 'gr.nama_customer', 'gr.wilayah', DB::raw('gr.po_no as customer_po'))
                 ->first();
 
             if ($check2) {

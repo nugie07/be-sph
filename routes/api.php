@@ -19,6 +19,7 @@ use App\Http\Controllers\CustomerDatabaseController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\MasterWilayahController;
 use App\Http\Controllers\ManualController;
+use App\Http\Controllers\OatTransportirController;
 use Illuminate\Support\Facades\DB;
 
 Route::get('/health', function () {
@@ -186,6 +187,17 @@ Route::get('/supplier-transporter/{id}', [SupplierTransporterController::class, 
 Route::post('/supplier-transporter', [SupplierTransporterController::class, 'store']);
 Route::put('/supplier-transporter/{id}', [SupplierTransporterController::class, 'update']);
 Route::delete('/supplier-transporter/{id}', [SupplierTransporterController::class, 'destroy']);
+
+// OAT Transportir (oat_volume by vendor)
+Route::get('/oat-transportir/vendors', [OatTransportirController::class, 'getVendors']);
+Route::get('/oat-transportir/lokasi', [OatTransportirController::class, 'getOatLokasi']);
+Route::get('/oat-transportir/oat-qty', [OatTransportirController::class, 'getOatqty']);
+Route::get('/oat-transportir/value/{id}', [OatTransportirController::class, 'getOatValue']);
+Route::get('/oat-transportir', [OatTransportirController::class, 'index']);
+Route::get('/oat-transportir/{id}', [OatTransportirController::class, 'show']);
+Route::post('/oat-transportir', [OatTransportirController::class, 'store']);
+Route::put('/oat-transportir/{id}', [OatTransportirController::class, 'update']);
+Route::delete('/oat-transportir/{id}', [OatTransportirController::class, 'destroy']);
 
 // Customer Database Management
 Route::get('/customer-database', [CustomerDatabaseController::class, 'index']);

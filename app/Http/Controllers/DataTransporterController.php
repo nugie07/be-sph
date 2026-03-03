@@ -21,6 +21,11 @@ class DataTransporterController extends Controller
             $query->where('category', 2);
         }
 
+        // Filter wilayah (optional): ?category=2&wilayah=1
+        if ($request->filled('wilayah')) {
+            $query->where('wilayah_id', $request->wilayah);
+        }
+
         // Filter tipe (optional, case-insensitive)
         if ($request->has('tipe') && !empty($request->tipe)) {
             $query->whereRaw('LOWER(tipe) = ?', [strtolower(trim($request->tipe))]);
