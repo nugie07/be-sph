@@ -25,6 +25,9 @@ class MasterCustomer extends Model
         'delivery_method',
         'bill_to',
         'ship_to',
-        'status'
+        'status',
+        'pbbkb',
+        'susut',
+        'payment',
     ];
 }

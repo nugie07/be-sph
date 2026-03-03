@@ -390,13 +390,19 @@ public function getCustomerDetail(Request $request)
                 return $result;
             }
         $customer = MasterCustomer::where('id', $request->id)->first();
+        if (!$customer) {
+            return response()->json(['message' => 'Customer tidak ditemukan'], 404);
+        }
         return response()->json([
-            'cust_code' => $customer->cust_code,
-            'alias'     => $customer->alias,
-            'type'      => $customer->type,
-            'pic_name'  => $customer->pic_name,
+            'cust_code'   => $customer->cust_code,
+            'alias'       => $customer->alias,
+            'type'        => $customer->type,
+            'pic_name'    => $customer->pic_name,
             'pic_contact' => $customer->pic_contact,
-            'email'    => $customer->email,
+            'email'       => $customer->email,
+            'pbbkb'       => $customer->pbbkb ?? null,
+            'susut'       => $customer->susut ?? null,
+            'payment'     => $customer->payment ?? null,
         ]);
         }
 public function store(Request $request)
@@ -460,13 +466,16 @@ public function store(Request $request)
             $sph->status       = 1;
             $sph->save();
 
-            // Update master_customer dengan pic_name dan pic_contact
+            // Update master_customer dengan pic_name, pic_contact, pbbkb, susut, payment
             try {
                 $masterCustomer = MasterCustomer::where('name', $sph->comp_name)->first();
                 if ($masterCustomer) {
                     $masterCustomer->update([
-                        'pic_name' => $sph->pic,
-                        'pic_contact' => $sph->contact_no
+                        'pic_name'   => $sph->pic,
+                        'pic_contact' => $sph->contact_no,
+                        'pbbkb'      => $sph->pbbkb !== null ? (string) $sph->pbbkb : null,
+                        'susut'      => $sph->susut ?? null,
+                        'payment'    => $sph->pay_method ?? null,
                     ]);
                 }
             } catch (\Exception $e) {
