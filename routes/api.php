@@ -197,6 +197,7 @@ Route::get('/oat-transportir', [OatTransportirController::class, 'index']);
 Route::get('/oat-transportir/{id}', [OatTransportirController::class, 'show']);
 Route::post('/oat-transportir', [OatTransportirController::class, 'store']);
 Route::put('/oat-transportir/{id}', [OatTransportirController::class, 'update']);
+Route::post('/oat-transportir/{id}/update', [OatTransportirController::class, 'updatePartial']);
 Route::delete('/oat-transportir/{id}', [OatTransportirController::class, 'destroy']);
 
 // Customer Database Management

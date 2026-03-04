@@ -59,10 +59,8 @@ class SupplierTransporterController extends Controller
             // Get total count for pagination
             $totalCount = $query->count();
 
-            // Join master_wilayah untuk nama wilayah, get paginated results
-            $data = $query->leftJoin('master_wilayah as mw', 'data_supplier_transporter.wilayah_id', '=', 'mw.id')
-                ->select('data_supplier_transporter.*', 'mw.nama as wilayah_nama')
-                ->orderBy('data_supplier_transporter.created_at', 'desc')
+            // Get paginated results (wilayah_id column removed from table)
+            $data = $query->orderBy('created_at', 'desc')
                 ->skip(($page - 1) * $perPage)
                 ->take($perPage)
                 ->get();
@@ -81,8 +79,6 @@ class SupplierTransporterController extends Controller
                     'address' => $item->address,
                     'status' => $item->status,
                     'category' => $item->category,
-                    'wilayah_id' => $item->wilayah_id ?? null,
-                    'wilayah' => $item->wilayah_nama ?? null,
                     'created_at' => $item->created_at ? Carbon::parse($item->created_at)->format('Y-m-d H:i') : null,
                     'updated_at' => $item->updated_at ? Carbon::parse($item->updated_at)->format('Y-m-d H:i') : null
                 ];
@@ -148,10 +144,8 @@ class SupplierTransporterController extends Controller
 
         try {
             $data = DB::table('data_supplier_transporter')
-                ->leftJoin('master_wilayah as mw', 'data_supplier_transporter.wilayah_id', '=', 'mw.id')
-                ->where('data_supplier_transporter.id', $id)
-                ->whereNull('data_supplier_transporter.deleted_at')
-                ->select('data_supplier_transporter.*', 'mw.nama as wilayah_nama')
+                ->where('id', $id)
+                ->whereNull('deleted_at')
                 ->first();
 
             if (!$data) {
@@ -175,8 +169,6 @@ class SupplierTransporterController extends Controller
                     'address' => $data->address,
                     'status' => $data->status,
                     'category' => $data->category,
-                    'wilayah_id' => $data->wilayah_id ?? null,
-                    'wilayah' => $data->wilayah_nama ?? null,
                     'created_at' => $data->created_at ? Carbon::parse($data->created_at)->format('Y-m-d H:i') : null,
                     'updated_at' => $data->updated_at ? Carbon::parse($data->updated_at)->format('Y-m-d H:i') : null
                 ]
@@ -222,8 +214,7 @@ class SupplierTransporterController extends Controller
                 'contact_no' => 'required|string|max:20',
                 'email' => 'required|email|max:255',
                 'address' => 'required|string|max:500',
-                'category' => 'required|in:1,2', // 1=Supplier, 2=Transporter
-                'wilayah_id' => 'nullable|integer|exists:master_wilayah,id'
+                'category' => 'required|in:1,2' // 1=Supplier, 2=Transporter
             ]);
 
             if ($validator->fails()) {
@@ -247,7 +238,6 @@ class SupplierTransporterController extends Controller
                 'address' => $request->address,
                 'status' => 1,
                 'category' => $request->category,
-                'wilayah_id' => $request->filled('wilayah_id') ? $request->wilayah_id : null,
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
@@ -278,8 +268,7 @@ class SupplierTransporterController extends Controller
                     'email' => $request->email,
                     'address' => $request->address,
                     'status' => 1,
-                    'category' => $request->category,
-                    'wilayah_id' => $request->filled('wilayah_id') ? $request->wilayah_id : null
+                    'category' => $request->category
                 ]
             ]);
 
@@ -324,8 +313,7 @@ class SupplierTransporterController extends Controller
                 'email' => 'required|email|max:255',
                 'address' => 'required|string|max:500',
                 'status' => 'required|in:0,1',
-                'category' => 'required|in:1,2',
-                'wilayah_id' => 'nullable|integer|exists:master_wilayah,id'
+                'category' => 'required|in:1,2'
             ]);
 
             if ($validator->fails()) {
@@ -364,7 +352,6 @@ class SupplierTransporterController extends Controller
                     'address' => $request->address,
                     'status' => $request->status,
                     'category' => $request->category,
-                    'wilayah_id' => $request->filled('wilayah_id') ? $request->wilayah_id : null,
                     'updated_at' => now()
                 ]);
 
@@ -393,8 +380,7 @@ class SupplierTransporterController extends Controller
                     'email' => $request->email,
                     'address' => $request->address,
                     'status' => $request->status,
-                    'category' => $request->category,
-                    'wilayah_id' => $request->filled('wilayah_id') ? $request->wilayah_id : null
+                    'category' => $request->category
                 ]
             ]);
 

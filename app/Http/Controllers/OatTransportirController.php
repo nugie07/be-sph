@@ -329,6 +329,84 @@ class OatTransportirController extends Controller
     }
 
     /**
+     * Update oat_volume by id — hanya field name, oat, value (tanpa vendor_id/wilayah_id)
+     */
+    public function updatePartial(Request $request, $id)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'nullable|string|max:255',
+            'oat' => 'nullable|string|max:255',
+            'value' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $exists = DB::table('oat_volume')->where('id', $id)->first();
+        if (!$exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data OAT tidak ditemukan',
+            ], 404);
+        }
+
+        $payload = ['updated_at' => now()];
+        if ($request->has('name')) {
+            $payload['name'] = $request->name;
+        }
+        if ($request->has('oat')) {
+            $payload['oat'] = $request->oat;
+        }
+        if ($request->has('value')) {
+            $payload['value'] = $request->value;
+        }
+
+        if (count($payload) === 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kirim minimal satu field: name, oat, atau value.',
+            ], 422);
+        }
+
+        try {
+            DB::table('oat_volume')->where('id', $id)->update($payload);
+            UserSysLogHelper::logFromAuth($result, 'OatTransportir', 'updatePartial');
+
+            $row = DB::table('oat_volume')->where('id', $id)->first();
+            return response()->json([
+                'success' => true,
+                'message' => 'OAT berhasil diperbarui',
+                'data' => [
+                    'id' => (int) $id,
+                    'wilayah_id' => $row->wilayah_id,
+                    'vendor_id' => $row->vendor_id,
+                    'name' => $row->name,
+                    'oat' => $row->oat ?? null,
+                    'value' => $row->value ?? null,
+                    'created_at' => Carbon::parse($row->created_at)->format('Y-m-d H:i:s'),
+                    'updated_at' => Carbon::parse($row->updated_at)->format('Y-m-d H:i:s'),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('OatTransportir updatePartial error', ['id' => $id, 'error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui OAT: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Delete oat_volume (hard delete)
      */
     public function destroy(Request $request, $id)
