@@ -96,34 +96,34 @@
 <body>
     <!-- Wrapper utama untuk memastikan konten tidak keluar halaman -->
     <div style="width: 100%; height: 100%;">
+    @php
+    $logoSrc = $storage_url . '/logo/iase_logo.png';
+@endphp
 
         <!-- Header -->
-        <!-- Top Centered Logo (IASE) -->
-        @php
-            $logoSrc = $storage_url . '/logo/iase_logo.png';
-        @endphp
-        <div style="text-align:center; margin-bottom: 0;">
-            @if(!empty($logoSrc))
-                <!-- FIX: Mengurangi tinggi logo agar tidak memakan banyak tempat -->
-                <img src="{{ $logoSrc }}" alt="Logo" style="height:85px; width:auto; object-fit:contain;">
-            @else
-                <div style="height:85px; width:180px; border:1px solid #ccc; display:inline-flex; align-items:center; justify-content:center; font-size:10px;">LOGO</div>
-            @endif
-        </div>
-        <div class="header">
-            <table>
-                <tr>
-                    <td width="100%" style="text-align:center; vertical-align:middle;">
-                        <small style="font-size:11px; line-height:1.25;">
-                            Jenis Komoditi/ Produk: Solar HSD B40<br />
-                            World Capital Tower 5th Floor, Unit 01, Jl. Mega Kuningan Barat No. 3, Kec. Setiabudi, Jakarta Selatan 12950<br />
-                            Gagah Putera Satria Building Jl. KP Tendean No. 158 Banjarmasin, Kalimantan Selatan 70231<br />
-                            {{ $settings['Sub_Title_4'] ?? '' }}
-                        </small>
-                    </td>
-                </tr>
-            </table>
-        </div>
+        <div style="width: 100%; text-align: center;">
+    @if(!empty($logoSrc))
+        <img src="{{ $logoSrc }}" alt="Logo" style="width:120px; height:auto; object-fit:contain; display:block; margin:0 auto;">
+                        
+    @else
+        <div style="height:100px; width:300px; border:1px solid #ccc; margin: 0 auto; display:block;">LOGO</div>
+    @endif
+</div>
+
+<div class="header" style="margin-top: 10px;">
+    <table width="100%">
+        <tr>
+            <td style="text-align:center;">
+                <small style="font-size:13px;">
+                    Jenis Komoditi/ Produk: Solar HSD B40<br />
+                    World Capital Tower 5th Floor, Unit 01, Jl. Mega Kuningan Barat No. 3, Kec. Setiabudi, Jakarta Selatan 12950<br />
+                    Gagah Putera Satria Building Jl. KP Tendean No. 158 Banjarmasin, Kalimantan Selatan 70231<br />
+                    {{ $settings['Sub_Title_4'] ?? '' }}
+                </small>
+            </td>
+        </tr>
+    </table>
+</div>
 
         <!-- Content -->
         <div class="content">
@@ -220,12 +220,61 @@
                             </tr>
                         @endforelse
                     </tbody>
-                </table></td></tr></table>
+                </table></td>
+                </tr>
+                <tr><td colspan="2" style="padding-top: 6px;"><br></td></tr>
+                <tr>
+                    <td colspan="2" style="vertical-align: top; padding: 0;">
+                        <table style="border-collapse: collapse; width: auto;">
+                            <tr>
+                                <td style="vertical-align: top; padding: 0 6px 0 0; white-space: nowrap;">OAT :</td>
+                                <td style="vertical-align: top; padding: 0;">
+                                    @php
+                                        $customers = $customers ?? collect();
+                                        $hasQty = $customers->filter(function($c) {
+                                            $q = $c->qty ?? null;
+                                            if ($q === null || $q === '') return false;
+                                            if (is_numeric($q) && (float)$q == 0) return false;
+                                            return true;
+                                        })->count() > 0;
+                                        $hasOat = $customers->filter(function($c) {
+                                            $o = trim((string)($c->oat ?? ''));
+                                            return $o !== '' && $o !== '-';
+                                        })->count() > 0;
+                                    @endphp
+                                    <table class="tableoat" style="border: 1px solid #000; border-collapse: collapse; width: auto;">
+                                        <thead>
+                                            <tr>
+                                                <th style="border: 1px solid #000; padding: 4px 8px; font-weight: bold; text-transform: uppercase; text-align: center; background-color: #f0f0f0;">Lokasi</th>
+                                                @if($hasQty)<th style="border: 1px solid #000; padding: 4px 8px; font-weight: bold; text-transform: uppercase; text-align: center; background-color: #f0f0f0;">Qty</th>@endif
+                                                @if($hasOat)<th style="border: 1px solid #000; padding: 4px 8px; font-weight: bold; text-transform: uppercase; text-align: center; background-color: #f0f0f0;">OAT</th>@endif
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($customers as $customer)
+                                            <tr>
+                                                <td style="border: 1px solid #000; padding: 4px 8px;">{{ $customer->location ?? '' }}</td>
+                                                @if($hasQty)<td style="border: 1px solid #000; padding: 4px 8px;">{{ $customer->qty ?? '' }}</td>@endif
+                                                @if($hasOat)<td style="border: 1px solid #000; padding: 4px 8px;">
+                                                    {{ $customer->oat ?? '' }}
+                                                    @if($customer->oat && strtoupper(trim((string)$customer->oat)) !== 'ONSITE')
+                                                    <span style="font-size: 10px;">/ ltr</span>
+                                                    @endif
+                                                </td>@endif
+                                            </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                </table>
             @endif
 
             <!-- Payment & Remarks -->
             <div style="margin-top: 10px;">
-                <p style="font-weight:bold;">OAT : ONSITE</p>
                 <p style="font-weight:bold;">Payment: {{ $sph->pay_method }}</p>
                 <p>{{ $settings['Payment_info_1'] ?? '' }}</p>
                 <p>{{ $settings['Payment_info_2'] ?? '' }}</p>
@@ -234,16 +283,16 @@
             <div class="remarks">
                 <span style="font-weight:bold;">Remarks:</span>
                 <ol>
-                <li>Toleransi Susut {{ $sph->susut }} % berdasarkan flowmeter yang telah di kalibrasi atau tinggi cairan truk tangki transportir yang sudah di kalibrasi</li>
+                    <li>Toleransi Susut {{ $sph->susut }} % berdasarkan flowmeter yang telah di kalibrasi atau tinggi cairan truk tangki transportir yang sudah di kalibrasi</li>
                     <li><strong>{{ $sph->note_berlaku ?? 'Harga Berlaku' }}</strong> </li>
                     <li>Tanggung Jawab PT IASE terhadap product yang dikirim baik kuantitas maupun kualitas adalah sampai pada saat sebelum bongkar dimana produk masih berada di truk
                         tangki transportir PT IASE . Pelanggan berkewajiban mengambil sampel untuk disimpan dan memastikan produk dalam kondisi baik sebelum dibongkar.
                     </li>
                     <li>Produk sesuai dengan spesifikasi berdasarkan SK Dirjen Migas No. {{ $settings['other_config']['pbbkb_include_sk'] ?? '' }}</li>
                     <li>PO harap dapat diemailkan ke {{ $email->useremail ?? '' }} dan {{ $settings['pbbkb_include_email2'] ?? '' }}</li>
+                    <li>Harga sewaktu waktu dapat berubah tanpa ada pemberitahuan terlebih dahulu</li>
                     <li>Harap mencantumkan No Tagihan dan No PO pada bukti transfer anda sebagai bukti pembayaran yang sah</li>
-                    <li>Harga termasuk <strong>PBBKB</strong></li>
-                </ol>
+                    
                 </ol>
             </div>
             <p>Demikianlah proposal penawaran ini kami buat, bila ada pertanyaan mohon untuk menghubungi kami.</p>
@@ -279,7 +328,7 @@
                     </span>
 
                     <span style="display:inline-block; font-size:9px; line-height:1.25; text-align:left; white-space:nowrap; position:relative; top:-25px;">
-                    <span style="display:block; margin:0;">ISO 9001 : 2015 No. GMIQ2511342</span>
+                        <span style="display:block; margin:0;">ISO 9001 : 2015 No. GMIQ2511342</span>
                         <span style="display:block; margin:0;">ISO 14001 : 2015 No. GMIE2511343</span>
                         <span style="display:block; margin:0;">ISO 2018 : 2018 No. GMIH2511344</span>
                     </span>

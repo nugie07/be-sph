@@ -1882,6 +1882,14 @@ public function downloadPdf($id)
             'last_name' => $userData->last_name ?? ''
         ];
 
+        // Data OAT (customers) untuk template BWS / lain yang pakai kotak Lokasi
+        $customers = DB::table('oat_customer as a')
+            ->leftJoin('master_customer as b', 'b.id', '=', 'a.cust_id')
+            ->leftJoin('data_trx_sph as c', 'c.comp_name', '=', 'b.name')
+            ->where('c.id', $sph->id)
+            ->select('a.location', 'a.qty', 'a.oat')
+            ->get();
+
         // Render PDF dengan template terpilih
         $pdf = Pdf::setOptions([
                 'enable_remote'   => true,
@@ -1895,11 +1903,11 @@ public function downloadPdf($id)
                 'logoBase64'       => $logoBase64,
                 'asibLogoBase64'   => $asibLogoBase64,
                 'gmiLogoBase64'    => $gmiLogoBase64,
-                // pass both grouped and raw details to support different templates
                 'details'          => $details,
                 'data'             => ['details' => $details],
                 'details_grouped'  => $detailsGrouped,
                 'email'            => $email,
+                'customers'        => $customers,
             ])->setPaper('a4', 'portrait');
 
         // File path: /{tipesph}/{bulanberjalan}.{uniqueidtimestamp}.{kodesph}.sph
