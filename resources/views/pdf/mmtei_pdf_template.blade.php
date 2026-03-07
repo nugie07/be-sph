@@ -233,13 +233,37 @@
                                 $half = ceil($dataCount / 2);
                                 $leftData = $showTwoTables ? $customers->take($half) : $customers;
                                 $rightData = $showTwoTables ? $customers->slice($half) : collect();
+
+                                // Check if all qty values are null or 0 for left and right data
+                                $leftHasQty = $leftData->filter(function($customer) {
+                                    return !is_null($customer->qty) && $customer->qty != 0;
+                                })->count() > 0;
+
+                                $rightHasQty = $rightData->filter(function($customer) {
+                                    return !is_null($customer->qty) && $customer->qty != 0;
+                                })->count() > 0;
                                 @endphp
                                 <td style="padding: 0; vertical-align: top; @if($showTwoTables) padding-right: 20px; @endif">
                                     <table class="tableoat">
-                                        <thead><tr><th>Lokasi</th><th>Qty</th><th>OAT</th></tr></thead>
+                                        <thead>
+                                            <tr>
+                                                <th>Lokasi</th>
+                                                @if($leftHasQty)<th>Qty</th>@endif
+                                                <th>OAT</th>
+                                            </tr>
+                                        </thead>
                                         <tbody>
                                             @foreach ($leftData as $customer)
-                                            <tr><td>{{ $customer->location }}</td><td>{{ $customer->qty }}</td><td>{{ $customer->oat }}</td></tr>
+                                            <tr>
+                                                <td>{{ $customer->location }}</td>
+                                                @if($leftHasQty)<td>{{ $customer->qty }}</td>@endif
+                                                <td>
+                                                    {{ $customer->oat }}
+                                                    @if(strtoupper(trim($customer->oat ?? '')) !== 'ONSITE')
+                                                    <span class="info">/ ltr</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
                                             @endforeach
                                         </tbody>
                                     </table>
@@ -247,10 +271,25 @@
                                 @if ($showTwoTables)
                                 <td style="padding: 0; vertical-align: top;">
                                     <table class="tableoat">
-                                        <thead><tr><th>Lokasi</th><th>Qty</th><th>OAT</th></tr></thead>
+                                        <thead>
+                                            <tr>
+                                                <th>Lokasi</th>
+                                                @if($rightHasQty)<th>Qty</th>@endif
+                                                <th>OAT</th>
+                                            </tr>
+                                        </thead>
                                         <tbody>
                                             @foreach ($rightData as $customer)
-                                            <tr><td>{{ $customer->location }}</td><td>{{ $customer->qty }}</td><td>{{ $customer->oat }}</td></tr>
+                                            <tr>
+                                                <td>{{ $customer->location }}</td>
+                                                @if($rightHasQty)<td>{{ $customer->qty }}</td>@endif
+                                                <td>
+                                                    {{ $customer->oat }}
+                                                    @if(strtoupper(trim($customer->oat ?? '')) !== 'ONSITE')
+                                                    <span class="info">/ ltr</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
                                             @endforeach
                                         </tbody>
                                     </table>
