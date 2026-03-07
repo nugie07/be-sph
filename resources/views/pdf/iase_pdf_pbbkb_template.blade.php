@@ -100,7 +100,6 @@
                 <tr>
                     <td width="100%" style="text-align:center; vertical-align:middle;">
                         <small style="font-size:13px;">
-                        Jenis Komoditi/ Produk: Solar HSD B40<br />
                         World Capital Tower 5th Floor, Unit 01, Jl. Mega Kuningan Barat No. 3, Kec. Setiabudi, Jakarta Selatan 12950<br />
                         Gagah Putera Satria Building Jl. KP Tendean No. 158 Banjarmasin, Kalimantan Selatan 70231<br />
                         {{ $settings['Sub_Title_4'] ?? '' }}
