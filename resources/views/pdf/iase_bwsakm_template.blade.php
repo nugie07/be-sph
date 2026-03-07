@@ -307,7 +307,7 @@
             <td style="width:60%; vertical-align:bottom;">
             <div>
             Salam Sukses,<br><br><br><br>
-            <span style="font-weight:bold;">{{ $email->first_name ?? '' }} {{ $email->last_name ?? '' }}</span>
+            <span style="font-weight:bold;">{{ $settings['sign_bws_akm'] ?? '' }}</span>
             </div>
             </td>
             <!-- Kolom Logo dan ISO (disejajarkan ke kanan) -->

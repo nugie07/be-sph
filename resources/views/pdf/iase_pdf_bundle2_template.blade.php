@@ -178,19 +178,21 @@
                     <td>
                         <table class="kmp-table" style="border: 1px solid #000;">
                         <colgroup>
-                                <col style="width:25%">
-                                <col style="width:8%">
+                                <col style="width:22%">
+                                <col style="width:7%">
+                                <col style="width:12%">
+                                <col style="width:10%">
+                                <col style="width:12%">
+                                <col style="width:12%">
+                                <col style="width:12%">
                                 <col style="width:13%">
-                                <col style="width:13%">
-                                <col style="width:13%">
-                                <col style="width:13%">
-                                <col style="width:15%">
                         </colgroup>
                         <thead>
                                 <tr>
                                     <th style="text-align:center; border: 1px solid #000;">Lokasi Kalsel</th>
                                     <th style="text-align:center; border: 1px solid #000;">QTY</th>
                                     <th style="text-align:center; border: 1px solid #000;">Harga Dasar</th>
+                                    <th style="text-align:center; border: 1px solid #000;">PBBKB 10%</th>
                                     <th style="text-align:center; border: 1px solid #000;">PPN</th>
                                     <th style="text-align:center; border: 1px solid #000;">Total</th>
                                     <th style="text-align:center; border: 1px solid #000;">Transport</th>
@@ -208,6 +210,7 @@
                                     <td rowspan="2" style="text-align:center; border: 1px solid #000;">Sesulung Estate</td>
                                     <td style="text-align:center; border: 1px solid #000;">5KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $sesulung5 ? number_format((float)$sesulung5->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $sesulung5 ? number_format((float)($sesulung5->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $sesulung5 ? number_format((float)$sesulung5->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $sesulung5 ? number_format((float)$sesulung5->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $sesulung5 ? number_format((float)$sesulung5->transport, 2, ',', '.') : '0,00' }}</td>
@@ -216,6 +219,7 @@
                                 <tr>
                                     <td style="text-align:center; border: 1px solid #000;">10KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $sesulung10 ? number_format((float)$sesulung10->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $sesulung10 ? number_format((float)($sesulung10->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $sesulung10 ? number_format((float)$sesulung10->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $sesulung10 ? number_format((float)$sesulung10->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $sesulung10 ? number_format((float)$sesulung10->transport, 2, ',', '.') : '0,00' }}</td>
@@ -225,6 +229,7 @@
                                     <td rowspan="2" style="text-align:center; border: 1px solid #000;">Desa Betung</td>
                                     <td style="text-align:center; border: 1px solid #000;">5KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $betung5 ? number_format((float)$betung5->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $betung5 ? number_format((float)($betung5->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $betung5 ? number_format((float)$betung5->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $betung5 ? number_format((float)$betung5->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $betung5 ? number_format((float)$betung5->transport, 2, ',', '.') : '0,00' }}</td>
@@ -233,6 +238,7 @@
                                 <tr>
                                     <td style="text-align:center; border: 1px solid #000;">10KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $betung10 ? number_format((float)$betung10->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $betung10 ? number_format((float)($betung10->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $betung10 ? number_format((float)$betung10->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $betung10 ? number_format((float)$betung10->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $betung10 ? number_format((float)$betung10->transport, 2, ',', '.') : '0,00' }}</td>
@@ -243,6 +249,7 @@
                                     <th style="text-align:center; background-color:#fff; border: 1px solid #000; font-weight:bold;">Lokasi Kalteng</th>
                                     <th style="text-align:center; border: 1px solid #000;">QTY</th>
                                     <th style="text-align:center; border: 1px solid #000;">Harga Dasar</th>
+                                    <th style="text-align:center; border: 1px solid #000;">PBBKB 7.5%</th>
                                     <th style="text-align:center; border: 1px solid #000;">PPN</th>
                                     <th style="text-align:center; border: 1px solid #000;">Total</th>
                                     <th style="text-align:center; border: 1px solid #000;">Transport</th>
@@ -267,6 +274,7 @@
                                     <td rowspan="2" style="text-align:center; border: 1px solid #000;">Pundu Pantai Harapan</td>
                                     <td style="text-align:center; border: 1px solid #000;">5KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $pundu5 ? number_format((float)$pundu5->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $pundu5 ? number_format((float)($pundu5->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $pundu5 ? number_format((float)$pundu5->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $pundu5 ? number_format((float)$pundu5->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $pundu5 ? number_format((float)$pundu5->transport, 2, ',', '.') : '0,00' }}</td>
@@ -275,6 +283,7 @@
                                 <tr>
                                     <td style="text-align:center; border: 1px solid #000;">10KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $pundu10 ? number_format((float)$pundu10->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $pundu10 ? number_format((float)($pundu10->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $pundu10 ? number_format((float)$pundu10->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $pundu10 ? number_format((float)$pundu10->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $pundu10 ? number_format((float)$pundu10->transport, 2, ',', '.') : '0,00' }}</td>
@@ -284,6 +293,7 @@
                                     <td rowspan="2" style="text-align:center; border: 1px solid #000;">Gunung Mas KHS</td>
                                     <td style="text-align:center; border: 1px solid #000;">5KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMas5 ? number_format((float)$gunungMas5->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $gunungMas5 ? number_format((float)($gunungMas5->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMas5 ? number_format((float)$gunungMas5->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMas5 ? number_format((float)$gunungMas5->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMas5 ? number_format((float)$gunungMas5->transport, 2, ',', '.') : '0,00' }}</td>
@@ -292,6 +302,7 @@
                                 <tr>
                                     <td style="text-align:center; border: 1px solid #000;">10KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMas10 ? number_format((float)$gunungMas10->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $gunungMas10 ? number_format((float)($gunungMas10->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMas10 ? number_format((float)$gunungMas10->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMas10 ? number_format((float)$gunungMas10->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMas10 ? number_format((float)$gunungMas10->transport, 2, ',', '.') : '0,00' }}</td>
@@ -301,6 +312,7 @@
                                     <td rowspan="2" style="text-align:center; border: 1px solid #000;">Mustika Sembuluh</td>
                                     <td style="text-align:center; border: 1px solid #000;">5KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $mustika5 ? number_format((float)$mustika5->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $mustika5 ? number_format((float)($mustika5->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $mustika5 ? number_format((float)$mustika5->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $mustika5 ? number_format((float)$mustika5->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $mustika5 ? number_format((float)$mustika5->transport, 2, ',', '.') : '0,00' }}</td>
@@ -309,6 +321,7 @@
                                 <tr>
                                     <td style="text-align:center; border: 1px solid #000;">10KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $mustika10 ? number_format((float)$mustika10->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $mustika10 ? number_format((float)($mustika10->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $mustika10 ? number_format((float)$mustika10->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $mustika10 ? number_format((float)$mustika10->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $mustika10 ? number_format((float)$mustika10->transport, 2, ',', '.') : '0,00' }}</td>
@@ -318,6 +331,7 @@
                                     <td rowspan="2" style="text-align:center; border: 1px solid #000;">Desa Amin</td>
                                     <td style="text-align:center; border: 1px solid #000;">5KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $desaAmin5 ? number_format((float)$desaAmin5->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $desaAmin5 ? number_format((float)($desaAmin5->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $desaAmin5 ? number_format((float)$desaAmin5->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $desaAmin5 ? number_format((float)$desaAmin5->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $desaAmin5 ? number_format((float)$desaAmin5->transport, 2, ',', '.') : '0,00' }}</td>
@@ -326,6 +340,7 @@
                                 <tr>
                                     <td style="text-align:center; border: 1px solid #000;">10KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $desaAmin10 ? number_format((float)$desaAmin10->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $desaAmin10 ? number_format((float)($desaAmin10->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $desaAmin10 ? number_format((float)$desaAmin10->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $desaAmin10 ? number_format((float)$desaAmin10->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $desaAmin10 ? number_format((float)$desaAmin10->transport, 2, ',', '.') : '0,00' }}</td>
@@ -335,6 +350,7 @@
                                     <td rowspan="2" style="text-align:center; border: 1px solid #000;">Gunung Makmur</td>
                                     <td style="text-align:center; border: 1px solid #000;">5KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMakmur5 ? number_format((float)$gunungMakmur5->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $gunungMakmur5 ? number_format((float)($gunungMakmur5->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMakmur5 ? number_format((float)$gunungMakmur5->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMakmur5 ? number_format((float)$gunungMakmur5->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMakmur5 ? number_format((float)$gunungMakmur5->transport, 2, ',', '.') : '0,00' }}</td>
@@ -343,6 +359,7 @@
                                 <tr>
                                     <td style="text-align:center; border: 1px solid #000;">10KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMakmur10 ? number_format((float)$gunungMakmur10->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $gunungMakmur10 ? number_format((float)($gunungMakmur10->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMakmur10 ? number_format((float)$gunungMakmur10->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMakmur10 ? number_format((float)$gunungMakmur10->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $gunungMakmur10 ? number_format((float)$gunungMakmur10->transport, 2, ',', '.') : '0,00' }}</td>
@@ -352,6 +369,7 @@
                                     <td rowspan="2" style="text-align:center; border: 1px solid #000;">Simpang Seluncing</td>
                                     <td style="text-align:center; border: 1px solid #000;">5KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $simpang5 ? number_format((float)$simpang5->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $simpang5 ? number_format((float)($simpang5->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $simpang5 ? number_format((float)$simpang5->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $simpang5 ? number_format((float)$simpang5->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $simpang5 ? number_format((float)$simpang5->transport, 2, ',', '.') : '0,00' }}</td>
@@ -360,6 +378,7 @@
                                 <tr>
                                     <td style="text-align:center; border: 1px solid #000;">10KL</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $simpang10 ? number_format((float)$simpang10->price_liter, 2, ',', '.') : '0,00' }}</td>
+                                    <td style="text-align:right; border: 1px solid #000;">{{ $simpang10 ? number_format((float)($simpang10->pbbkb ?? 0), 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $simpang10 ? number_format((float)$simpang10->ppn, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $simpang10 ? number_format((float)$simpang10->total_price, 2, ',', '.') : '0,00' }}</td>
                                     <td style="text-align:right; border: 1px solid #000;">{{ $simpang10 ? number_format((float)$simpang10->transport, 2, ',', '.') : '0,00' }}</td>
@@ -427,7 +446,7 @@
                     <td style="vertical-align: middle; font-size:8px; line-height:1.2; text-align:left;">
                     <span style="display:block; margin:0;">ISO 9001 : 2015 No. GMIQ2511342</span>
                         <span style="display:block; margin:0;">ISO 14001 : 2015 No. GMIE2511343</span>
-                        <span style="display:block; margin:0;">ISO 2018 : 2018 No. GMIH2511344</span>
+                        <span style="display:block; margin:0;">ISO 45001 : 2018 No. GMIH2511344</span>
                     </td>
                 </tr>
                 </table>
