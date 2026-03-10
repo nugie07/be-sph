@@ -20,6 +20,7 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\MasterWilayahController;
 use App\Http\Controllers\ManualController;
 use App\Http\Controllers\OatTransportirController;
+use App\Http\Controllers\ReportingController;
 use Illuminate\Support\Facades\DB;
 
 Route::get('/health', function () {
@@ -246,6 +247,11 @@ Route::get('/manual-details/{id}', [ManualController::class, 'showDetail']);
 Route::post('/manual-details', [ManualController::class, 'storeDetail']);
 Route::put('/manual-details/{id}', [ManualController::class, 'updateDetail']);
 Route::delete('/manual-details/{id}', [ManualController::class, 'destroyDetail']);
+
+// Reporting (export AR/AP/Logistik to Excel via queue, download from BytePlus)
+Route::post('/reporting/request', [ReportingController::class, 'requestReport']);
+Route::get('/reporting/exports', [ReportingController::class, 'index']);
+Route::get('/reporting/exports/{id}/download', [ReportingController::class, 'download']);
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
