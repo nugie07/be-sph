@@ -25,6 +25,7 @@ use App\Models\User;
 use App\Helpers\WorkflowHelper;
 use App\Helpers\UserSysLogHelper;
 use App\Jobs\GenerateSphPdfJob;
+use App\Services\TelegramNotificationService;
 
 class SphController extends Controller
 {
@@ -166,6 +167,9 @@ public function updateSph(Request $request)
             );
 
             DB::commit();
+
+            $kodeForNotify = $update['kode_sph'] ?? DB::table('data_trx_sph')->where('id', $validated['sph_id'])->value('kode_sph');
+            TelegramNotificationService::notifyNewSph($kodeForNotify ?? '-', $fullName);
 
             $this->dispatchGenerateSphPdfJob(
                 (int) $validated['sph_id'],
@@ -357,6 +361,8 @@ public function SphStoreDetails(Request $request)
 
             DB::commit();
 
+            TelegramNotificationService::notifyNewSph($sph->kode_sph ?? '-', $fullName);
+
             // Auto-generate PDF setelah simpan berhasil dan simpan ke temp_sph
             $this->dispatchGenerateSphPdfJob($sph->id, false, 'insert', $user->id ?? null);
 
@@ -497,6 +503,8 @@ public function store(Request $request)
             );
 
             DB::commit();
+
+            TelegramNotificationService::notifyNewSph($sph->kode_sph ?? '-', $fullName);
 
             // Auto-generate PDF setelah simpan berhasil dan simpan ke temp_sph
             $this->dispatchGenerateSphPdfJob($sph->id, false, 'insert', $user->id ?? null);

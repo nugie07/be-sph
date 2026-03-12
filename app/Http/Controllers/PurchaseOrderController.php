@@ -18,6 +18,7 @@ use App\Helpers\AuthValidator;
 use App\Helpers\UserSysLogHelper;
 use App\Models\GoodReceipt;
 use App\Models\DataTrxSph;
+use App\Services\TelegramNotificationService;
 
 class PurchaseOrderController extends Controller
 {
@@ -244,6 +245,8 @@ public function poTransporter(Request $request)
         $po->created_at   = now();
         $po->updated_at   = now();
         $po->save();
+
+        TelegramNotificationService::notifyNewPo($po->vendor_po ?? $vendor_po, $fullName, 'Transportir');
 
         // Buat workflow record dan remark menggunakan helper
         // trx_id menggunakan ID purchase_order yang baru dibuat
@@ -557,9 +560,11 @@ public function savePoSupplier(Request $request)
         $po->created_by      = $fullName;
         $po->save();
 
+        TelegramNotificationService::notifyNewPo($po->vendor_po ?? '-', $fullName, 'Supplier');
+
         $vendor_po = $po->vendor_po;
         $timestamp = Carbon::now()->format('Y-m-d H:i:s');
-        
+
         // WorkflowHelper mengharapkan int untuk trxId
         // Gunakan po->id karena trx_id di workflow_record adalah int
         // dan po->id selalu int dan tidak null

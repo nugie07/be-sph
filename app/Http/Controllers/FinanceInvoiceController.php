@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Models\DataTrxSph;
 use App\Models\FinanceInvoice;
 use App\Models\InvoiceDetail;
 use App\Models\MasterCustomer;
@@ -977,5 +978,50 @@ public function store(Request $request)
                 'message' => 'Gagal mengambil data: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * List SPH yang status approved (status = 4).
+     * Endpoint: GET /finance/sph_approved
+     * Query (opsional): date_from, date_to (Y-m-d) — filter berdasarkan created_at.
+     * Response: id, template_id, tipe_sph, kode_sph, comp_name, file_sph (URL), created_by, created_at.
+     */
+    public function sphApproved(Request $request)
+    {
+        $result = AuthValidator::validateTokenAndClient($request);
+        if (!is_array($result) || !$result['status']) {
+            return $result;
+        }
+
+        $query = DataTrxSph::where('status', 4)
+            ->select('id', 'template_id', 'tipe_sph', 'kode_sph', 'comp_name', 'file_sph', 'created_by', 'created_at');
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $list = $query->orderBy('created_at', 'desc')->get();
+
+        $data = $list->map(function ($row) {
+            return [
+                'id' => $row->id,
+                'template_id' => $row->template_id,
+                'tipe_sph' => $row->tipe_sph,
+                'kode_sph' => $row->kode_sph,
+                'comp_name' => $row->comp_name,
+                'file_sph' => $row->file_sph ? byteplus_url($row->file_sph) : null,
+                'created_by' => $row->created_by,
+                'created_at' => $row->created_at ? Carbon::parse($row->created_at)->format('Y-m-d H:i:s') : null,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'OK',
+            'data' => $data,
+        ]);
     }
 }

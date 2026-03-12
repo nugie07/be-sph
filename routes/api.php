@@ -157,7 +157,7 @@ Route::post('/finance/get-customer-by-po', [FinanceInvoiceController::class, 'ge
 Route::get('/finance/dn-list-invoice', [FinanceInvoiceController::class, 'dnlistinvoice']);
 Route::get('/finance/generate-cust-data', [FinanceInvoiceController::class, 'generateCustData']);
 Route::get('/finance/generate-po-customer', [FinanceInvoiceController::class, 'generatePoCustomer']);
-
+Route::get('/finance/sph_approved', [FinanceInvoiceController::class, 'sphApproved']);
 
 // Approval API
 Route::get('/approval/list', [ApprovalController::class, 'list']);
